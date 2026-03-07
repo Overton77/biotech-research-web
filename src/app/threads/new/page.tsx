@@ -1,26 +1,21 @@
 "use client";
 
 import { useRouter } from "next/navigation";
+import { useCreateThread } from "@/lib/queries";
 import { useState } from "react";
-import { api } from "@/lib/api";
 
 export default function NewThreadPage() {
   const router = useRouter();
+  const createThread = useCreateThread();
   const [title, setTitle] = useState("New research");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
-    setLoading(true);
-    setError(null);
     try {
-      const thread = await api.threads.create(title);
+      const thread = await createThread.mutateAsync(title);
       router.push(`/threads/${thread.id}`);
-    } catch (e) {
-      setError(e instanceof Error ? e.message : "Failed to create thread");
-    } finally {
-      setLoading(false);
+    } catch {
+      // error shown below
     }
   }
 
@@ -34,18 +29,20 @@ export default function NewThreadPage() {
             type="text"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
-            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 shadow-sm dark:border-gray-700 dark:bg-gray-900"
+            className="mt-1 block w-full rounded-lg border border-border px-3 py-2 text-sm bg-background focus:outline-none focus:ring-2 focus:ring-foreground/20"
           />
         </label>
-        {error && (
-          <p className="text-sm text-red-600 dark:text-red-400">{error}</p>
+        {createThread.error && (
+          <p className="text-sm text-red-600 dark:text-red-400">
+            {createThread.error instanceof Error ? createThread.error.message : "Failed to create thread"}
+          </p>
         )}
         <button
           type="submit"
-          disabled={loading}
-          className="rounded-md bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-50 dark:bg-gray-100 dark:text-gray-900 dark:hover:bg-gray-200"
+          disabled={createThread.isPending}
+          className="rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50 transition-opacity"
         >
-          {loading ? "Creating…" : "Create"}
+          {createThread.isPending ? "Creating..." : "Create"}
         </button>
       </form>
     </div>
