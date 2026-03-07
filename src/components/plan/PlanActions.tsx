@@ -1,0 +1,76 @@
+"use client";
+
+import { useState } from "react";
+import { useSocket } from "@/providers/SocketProvider";
+import { usePlanStore } from "@/stores/planStore";
+import type { ResearchPlan } from "@/types/api";
+
+interface PlanActionsProps {
+  threadId: string;
+  interruptId: string;
+  plan: ResearchPlan;
+  onClose: () => void;
+}
+
+export function PlanActions({ threadId, interruptId, plan, onClose }: PlanActionsProps) {
+  const socket = useSocket();
+  const { currentPlan } = usePlanStore();
+  const [notes, setNotes] = useState("");
+  const [loading, setLoading] = useState(false);
+
+  const handleApprove = () => {
+    setLoading(true);
+    const toSend = currentPlan ?? plan;
+    socket.emit("plan_approved", {
+      thread_id: threadId,
+      interrupt_id: interruptId,
+      plan: toSend,
+    });
+    onClose();
+    setLoading(false);
+  };
+
+  const handleReject = () => {
+    setLoading(true);
+    socket.emit("plan_rejected", {
+      thread_id: threadId,
+      interrupt_id: interruptId,
+      notes,
+    });
+    onClose();
+    setLoading(false);
+  };
+
+  return (
+    <div className="space-y-3 pt-2 border-t border-gray-200 dark:border-gray-800">
+      <label className="block">
+        <span className="text-sm text-gray-600 dark:text-gray-400">Notes (optional)</span>
+        <textarea
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          placeholder="Revision notes or rejection reason…"
+          rows={2}
+          className="mt-1 w-full rounded border border-gray-300 px-2 py-1.5 text-sm dark:border-gray-700 dark:bg-gray-900"
+        />
+      </label>
+      <div className="flex gap-2">
+        <button
+          type="button"
+          onClick={handleApprove}
+          disabled={loading}
+          className="flex-1 rounded-md bg-green-600 px-3 py-2 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+        >
+          Approve
+        </button>
+        <button
+          type="button"
+          onClick={handleReject}
+          disabled={loading}
+          className="flex-1 rounded-md border border-red-300 bg-white px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 dark:border-red-800 dark:bg-gray-900 dark:text-red-300 dark:hover:bg-red-900/20"
+        >
+          Reject
+        </button>
+      </div>
+    </div>
+  );
+}
