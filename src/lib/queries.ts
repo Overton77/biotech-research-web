@@ -34,3 +34,27 @@ export function useCreateThread() {
     },
   });
 }
+
+export function useUpdateThread() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, title }: { id: string; title: string }) =>
+      api.threads.update(id, title),
+    onSuccess: (thread) => {
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
+      queryClient.setQueryData(["thread", thread.id], thread);
+    },
+  });
+}
+
+export function useDeleteThread() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => api.threads.delete(id),
+    onSuccess: (_data, id) => {
+      queryClient.invalidateQueries({ queryKey: ["threads"] });
+      queryClient.removeQueries({ queryKey: ["thread", id] });
+      queryClient.removeQueries({ queryKey: ["messages", id] });
+    },
+  });
+}

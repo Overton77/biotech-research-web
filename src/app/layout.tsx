@@ -2,8 +2,8 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { SocketProvider } from "@/providers/SocketProvider";
 import { QueryProvider } from "@/providers/QueryProvider";
+import { Sidebar } from "@/components/Sidebar";
 import "./globals.css";
-import Link from "next/link";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,20 +32,13 @@ export default function RootLayout({
       >
         <QueryProvider>
           <SocketProvider>
-            <div className="flex h-screen">
-              <aside className="w-56 shrink-0 border-r border-border bg-muted/40 flex flex-col">
-                <div className="p-4 border-b border-border">
-                  <h1 className="text-sm font-semibold tracking-tight">
-                    Biotech Research
-                  </h1>
-                </div>
-                <nav className="flex-1 p-2 space-y-0.5">
-                  <Link
-                    href="/"
-                    className="flex items-center gap-2 rounded-md px-3 py-2 text-sm font-medium hover:bg-muted transition-colors"
-                  >
+            <div className="flex h-screen overflow-hidden">
+              <Sidebar />
+              <div className="flex-1 flex flex-col min-h-0 overflow-hidden">
+                <header className="shrink-0 h-12 border-b border-border flex items-center px-4 gap-3 bg-background/80 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 text-xs text-muted-foreground">
                     <svg
-                      className="w-4 h-4 opacity-60"
+                      className="w-3.5 h-3.5"
                       fill="none"
                       stroke="currentColor"
                       viewBox="0 0 24 24"
@@ -54,14 +47,19 @@ export default function RootLayout({
                         strokeLinecap="round"
                         strokeLinejoin="round"
                         strokeWidth={2}
-                        d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z"
+                        d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z"
                       />
                     </svg>
-                    Threads
-                  </Link>
-                </nav>
-              </aside>
-              <main className="flex-1 overflow-hidden">{children}</main>
+                    <span className="font-medium">AI Research Coordinator</span>
+                  </div>
+                  <div className="flex-1" />
+                  <div className="flex items-center gap-1.5">
+                    <span className="inline-block w-1.5 h-1.5 rounded-full bg-green-500 animate-pulse" />
+                    <span className="text-xs text-muted-foreground">Connected</span>
+                  </div>
+                </header>
+                <main className="flex-1 overflow-hidden">{children}</main>
+              </div>
             </div>
           </SocketProvider>
         </QueryProvider>

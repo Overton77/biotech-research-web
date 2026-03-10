@@ -16,6 +16,7 @@ interface ChatViewProps {
 export function ChatView({ threadId, initialMessages }: ChatViewProps) {
   const socket = useSocket();
   const scrollRef = useRef<HTMLDivElement>(null);
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
   const {
     messages,
@@ -84,6 +85,14 @@ export function ChatView({ threadId, initialMessages }: ChatViewProps) {
     });
   }, [messages, streamingContent, activeToolName]);
 
+  // Auto-resize textarea
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = "auto";
+    el.style.height = Math.min(el.scrollHeight, 120) + "px";
+  }, [input]);
+
   const handleSend = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
@@ -116,42 +125,100 @@ export function ChatView({ threadId, initialMessages }: ChatViewProps) {
 
   return (
     <div className="flex flex-col flex-1 min-h-0">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3">
+      {/* Message list */}
+      <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-4 space-y-3">
         {messages.length === 0 && !streamingContent && (
-          <div className="text-center py-12">
-            <p className="text-gray-400 dark:text-gray-500 text-sm">
-              Start a conversation. Ask the Coordinator to create a research plan when ready.
-            </p>
+          <div className="flex flex-col items-center justify-center h-full min-h-[200px] text-center py-16 space-y-3">
+            <div className="w-12 h-12 rounded-xl bg-muted/60 flex items-center justify-center">
+              <svg
+                className="w-6 h-6 text-muted-foreground"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={1.5}
+                  d="M8 12h.01M12 12h.01M16 12h.01M21 12c0 4.418-4.03 8-9 8a9.863 9.863 0 01-4.255-.949L3 20l1.395-3.72C3.512 15.042 3 13.574 3 12c0-4.418 4.03-8 9-8s9 3.582 9 8z"
+                />
+              </svg>
+            </div>
+            <div>
+              <p className="text-sm font-medium text-foreground/70">Start a conversation</p>
+              <p className="text-xs text-muted-foreground mt-1">
+                Ask the Coordinator to create a research plan when ready.
+              </p>
+            </div>
           </div>
         )}
+
         {messages.map((m) => (
           <MessageBubble key={m.id} message={m} />
         ))}
         <ToolActivity toolName={activeToolName} />
         {streamingContent && <StreamingMessage content={streamingContent} />}
+
+        {/* Streaming indicator (dots) when streaming but no content yet */}
+        {isStreaming && !streamingContent && !activeToolName && (
+          <div className="flex justify-start">
+            <div className="flex items-center gap-1 rounded-2xl bg-muted px-4 py-3">
+              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.3s]" />
+              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce [animation-delay:-0.15s]" />
+              <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full animate-bounce" />
+            </div>
+          </div>
+        )}
       </div>
+
+      {/* Input area */}
       <form
         onSubmit={handleSend}
         className="shrink-0 p-3 border-t border-border bg-background"
       >
-        <div className="flex gap-2">
-          <textarea
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            onKeyDown={handleKeyDown}
-            rows={1}
-            placeholder="Type a message... (Enter to send, Shift+Enter for newline)"
-            disabled={isStreaming}
-            className="flex-1 resize-none rounded-lg border border-border px-3 py-2 text-sm bg-background disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-foreground/20"
-          />
+        <div className="flex items-end gap-2">
+          <div className="flex-1 relative">
+            <textarea
+              ref={textareaRef}
+              value={input}
+              onChange={(e) => setInput(e.target.value)}
+              onKeyDown={handleKeyDown}
+              rows={1}
+              placeholder="Message the Coordinator… (Enter to send, Shift+Enter for newline)"
+              disabled={isStreaming}
+              className="w-full resize-none rounded-xl border border-border px-3 py-2.5 text-sm bg-background disabled:opacity-50 focus:outline-none focus:ring-2 focus:ring-foreground/20 transition-shadow leading-relaxed"
+            />
+          </div>
           <button
             type="submit"
             disabled={isStreaming || !input.trim()}
-            className="shrink-0 rounded-lg bg-foreground px-4 py-2 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50 transition-opacity"
+            className="shrink-0 rounded-xl bg-foreground px-4 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-40 transition-opacity flex items-center gap-1.5"
           >
-            {isStreaming ? "..." : "Send"}
+            {isStreaming ? (
+              <>
+                <span className="inline-block w-3.5 h-3.5 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                <span className="text-xs">Thinking</span>
+              </>
+            ) : (
+              <svg
+                className="w-4 h-4"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8"
+                />
+              </svg>
+            )}
           </button>
         </div>
+        <p className="text-[10px] text-muted-foreground mt-1.5 pl-1">
+          Shift+Enter for new line
+        </p>
       </form>
     </div>
   );

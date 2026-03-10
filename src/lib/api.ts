@@ -33,6 +33,21 @@ export const api = {
         body: JSON.stringify({ title }),
       }),
     get: (id: string) => apiFetch<Thread>("/threads/" + id),
+    update: (id: string, title: string) =>
+      apiFetch<Thread>("/threads/" + id, {
+        method: "PATCH",
+        body: JSON.stringify({ title }),
+      }),
+    delete: async (id: string) => {
+      const res = await fetch(BASE + "/threads/" + id, {
+        method: "DELETE",
+        headers: { "Content-Type": "application/json" },
+      });
+      if (!res.ok) {
+        const text = await res.text().catch(() => "");
+        throw new Error(`API ${res.status}: ${text || res.statusText}`);
+      }
+    },
     messages: (id: string, cursor?: string) =>
       apiFetch<CursorPage<Message>>(
         `/threads/${id}/messages${cursor ? "?cursor=" + encodeURIComponent(cursor) : ""}`
@@ -50,5 +65,10 @@ export const api = {
         method: "POST",
         body: JSON.stringify(notes != null ? { notes } : {}),
       }),
+    launch: (id: string) =>
+      apiFetch<{ mission_id: string; workflow_id: string; status: string }>(
+        "/plans/" + id + "/launch",
+        { method: "POST" },
+      ),
   },
 };
