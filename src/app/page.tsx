@@ -1,15 +1,18 @@
 "use client";
 
+import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useCreateThread } from "@/lib/queries";
 
 export default function Home() {
   const router = useRouter();
   const createThread = useCreateThread();
+  // TODO: Add feature where smaller llm creates thread name automatically after first
+  // message
 
   async function handleNewThread() {
     try {
-      const thread = await createThread.mutateAsync("New research");
+      const thread = await createThread.mutateAsync("New Research");
       router.push(`/threads/${thread.id}`);
     } catch {
       /* error surfaced via createThread.error */
@@ -18,7 +21,7 @@ export default function Home() {
 
   return (
     <div className="h-full flex flex-col items-center justify-center p-8">
-      <div className="max-w-md w-full text-center space-y-6">
+      <div className="max-w-lg w-full text-center space-y-8">
         <div className="flex justify-center">
           <div className="w-16 h-16 rounded-2xl bg-muted flex items-center justify-center">
             <svg
@@ -42,8 +45,8 @@ export default function Home() {
             Biotech Research Agent
           </h2>
           <p className="text-muted-foreground text-sm mt-2 leading-relaxed">
-            Start a new research thread to collaborate with the AI Coordinator.
-            Build research plans, run analyses, and explore biotech insights.
+            Start a new research thread, view your dashboard, or watch active
+            missions.
           </p>
         </div>
 
@@ -55,35 +58,57 @@ export default function Home() {
           </div>
         )}
 
-        <button
-          onClick={handleNewThread}
-          disabled={createThread.isPending}
-          className="inline-flex items-center gap-2 rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50 transition-opacity"
-        >
-          {createThread.isPending ? (
-            <>
-              <span className="inline-block w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
-              Creating…
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New Thread
-            </>
-          )}
-        </button>
+        <div className="flex flex-col sm:flex-row items-center justify-center gap-3">
+          <button
+            onClick={handleNewThread}
+            disabled={createThread.isPending}
+            className="inline-flex items-center gap-2 rounded-lg bg-foreground px-5 py-2.5 text-sm font-medium text-background hover:opacity-90 disabled:opacity-50 transition-opacity"
+          >
+            {createThread.isPending ? (
+              <>
+                <span className="inline-block w-4 h-4 border-2 border-background/30 border-t-background rounded-full animate-spin" />
+                Creating…
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-4 h-4"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                New Thread
+              </>
+            )}
+          </button>
+
+          <Link
+            href="/dashboard"
+            className="inline-flex items-center gap-2 rounded-lg border border-border px-5 py-2.5 text-sm font-medium hover:bg-muted transition-colors"
+          >
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              stroke="currentColor"
+              viewBox="0 0 24 24"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z"
+              />
+            </svg>
+            Open Dashboard
+          </Link>
+        </div>
 
         <p className="text-xs text-muted-foreground">
           Or select an existing thread from the sidebar

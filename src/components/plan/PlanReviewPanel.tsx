@@ -1,6 +1,7 @@
 "use client";
 
 import { useEffect } from "react";
+import Link from "next/link";
 import { useSocket } from "@/providers/SocketProvider";
 import { usePlanStore } from "@/stores/planStore";
 import { PlanActions } from "./PlanActions";
@@ -165,6 +166,15 @@ export function PlanReviewPanel({ threadId }: PlanReviewPanelProps) {
             <p className="text-xs text-emerald-500 dark:text-emerald-500 mt-1 font-mono truncate">
               {missionId}
             </p>
+            <Link
+              href={`/runs/${missionId}`}
+              className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
+            >
+              Watch run
+              <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
         )}
 

@@ -78,6 +78,9 @@ export function Sidebar() {
 
   const isActive = (id: string) => pathname === `/threads/${id}`;
 
+  const isDashboard = pathname.startsWith("/dashboard");
+  const isRuns = pathname.startsWith("/runs/");
+
   return (
     <aside className="w-64 shrink-0 border-r border-border bg-muted/20 flex flex-col">
       {/* Brand header */}
@@ -105,34 +108,49 @@ export function Sidebar() {
             <p className="text-xs text-muted-foreground">AI Research Agent</p>
           </div>
         </div>
-        <button
-          onClick={handleNewThread}
-          disabled={createThread.isPending}
-          className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
-        >
-          {createThread.isPending ? (
-            <>
-              <Spinner /> Creating…
-            </>
-          ) : (
-            <>
-              <svg
-                className="w-3.5 h-3.5"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 4v16m8-8H4"
-                />
-              </svg>
-              New Thread
-            </>
-          )}
-        </button>
+        <div className="space-y-1.5">
+          <Link
+            href="/dashboard"
+            className={`w-full rounded-md border px-3 py-2 text-xs font-medium transition-colors flex items-center justify-center gap-1.5 ${
+              isDashboard
+                ? "border-foreground/20 bg-muted text-foreground"
+                : "border-border bg-background hover:bg-muted text-foreground"
+            }`}
+          >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2V6zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2H6a2 2 0 01-2-2v-2zm10 0a2 2 0 012-2h2a2 2 0 012 2v2a2 2 0 01-2 2h-2a2 2 0 01-2-2v-2z" />
+            </svg>
+            Dashboard
+          </Link>
+          <button
+            onClick={handleNewThread}
+            disabled={createThread.isPending}
+            className="w-full rounded-md border border-border bg-background px-3 py-2 text-xs font-medium hover:bg-muted disabled:opacity-50 transition-colors flex items-center justify-center gap-1.5"
+          >
+            {createThread.isPending ? (
+              <>
+                <Spinner /> Creating…
+              </>
+            ) : (
+              <>
+                <svg
+                  className="w-3.5 h-3.5"
+                  fill="none"
+                  stroke="currentColor"
+                  viewBox="0 0 24 24"
+                >
+                  <path
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    strokeWidth={2}
+                    d="M12 4v16m8-8H4"
+                  />
+                </svg>
+                New Thread
+              </>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Thread list */}

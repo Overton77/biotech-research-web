@@ -1,4 +1,17 @@
-import type { ApiResponse, CursorPage, Thread, Message, ResearchPlan } from "@/types/api";
+import type {
+  ApiResponse,
+  CursorPage,
+  Thread,
+  Message,
+  ResearchPlan,
+  ResearchMission,
+  ResearchRun,
+  MissionStatusSummary,
+  MissionOutputs,
+  TaskRunOutputs,
+  ArtifactRef,
+  PaginatedResponse,
+} from "@/types/api";
 
 export const API_BASE =
   (typeof window !== "undefined"
@@ -54,6 +67,15 @@ export const api = {
       ),
   },
   plans: {
+    list: (params?: { skip?: number; limit?: number; thread_id?: string; status_filter?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.skip != null) qs.set("skip", String(params.skip));
+      if (params?.limit != null) qs.set("limit", String(params.limit));
+      if (params?.thread_id) qs.set("thread_id", params.thread_id);
+      if (params?.status_filter) qs.set("status_filter", params.status_filter);
+      const q = qs.toString();
+      return apiFetch<PaginatedResponse<ResearchPlan>>(`/plans${q ? "?" + q : ""}`);
+    },
     get: (id: string) => apiFetch<ResearchPlan>("/plans/" + id),
     update: (id: string, patch: Partial<ResearchPlan>) =>
       apiFetch<ResearchPlan>("/plans/" + id, {
@@ -70,5 +92,42 @@ export const api = {
         "/plans/" + id + "/launch",
         { method: "POST" },
       ),
+  },
+
+  missions: {
+    list: (params?: { skip?: number; limit?: number; research_plan_id?: string; thread_id?: string; status_filter?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.skip != null) qs.set("skip", String(params.skip));
+      if (params?.limit != null) qs.set("limit", String(params.limit));
+      if (params?.research_plan_id) qs.set("research_plan_id", params.research_plan_id);
+      if (params?.thread_id) qs.set("thread_id", params.thread_id);
+      if (params?.status_filter) qs.set("status_filter", params.status_filter);
+      const q = qs.toString();
+      return apiFetch<PaginatedResponse<ResearchMission>>(`/missions${q ? "?" + q : ""}`);
+    },
+    get: (id: string) => apiFetch<ResearchMission>("/missions/" + id),
+    status: (id: string) => apiFetch<MissionStatusSummary>("/missions/" + id + "/status"),
+    outputs: (id: string) => apiFetch<MissionOutputs>("/missions/" + id + "/outputs"),
+    runs: (id: string) => apiFetch<ResearchRun[]>("/missions/" + id + "/runs"),
+    runOutputs: (missionId: string, taskId: string, attemptNumber = 1) =>
+      apiFetch<TaskRunOutputs>(`/missions/${missionId}/runs/${taskId}/outputs?attempt_number=${attemptNumber}`),
+    artifacts: (missionId: string, taskId: string, attemptNumber = 1) =>
+      apiFetch<ArtifactRef[]>(`/missions/${missionId}/runs/${taskId}/artifacts?attempt_number=${attemptNumber}`),
+    artifactContent: (missionId: string, taskId: string, artifactName: string, artifactType = "report", attemptNumber = 1) =>
+      apiFetch<{ artifact_name: string; artifact_type: string; content: string }>(
+        `/missions/${missionId}/runs/${taskId}/artifacts/${encodeURIComponent(artifactName)}/content?attempt_number=${attemptNumber}&artifact_type=${encodeURIComponent(artifactType)}`,
+      ),
+  },
+
+  runs: {
+    list: (params?: { skip?: number; limit?: number; mission_id?: string }) => {
+      const qs = new URLSearchParams();
+      if (params?.skip != null) qs.set("skip", String(params.skip));
+      if (params?.limit != null) qs.set("limit", String(params.limit));
+      if (params?.mission_id) qs.set("mission_id", params.mission_id);
+      const q = qs.toString();
+      return apiFetch<PaginatedResponse<ResearchRun>>(`/runs${q ? "?" + q : ""}`);
+    },
+    get: (id: string) => apiFetch<ResearchRun>("/runs/" + id),
   },
 };
