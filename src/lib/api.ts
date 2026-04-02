@@ -13,15 +13,23 @@ import type {
   PaginatedResponse,
 } from "@/types/api";
 
-export const API_BASE =
-  (typeof window !== "undefined"
-    ? process.env.NEXT_PUBLIC_API_URL
-    : process.env.NEXT_PUBLIC_API_URL) || "http://localhost:8000";
+/** Prefer NEXT_PUBLIC_API_URL; else same host as the page on port 8000 (works with LAN IP when the API listens on 0.0.0.0). */
+export function getApiBase(): string {
+  const fromEnv = process.env.NEXT_PUBLIC_API_URL?.replace(/\/$/, "");
+  if (typeof window !== "undefined") {
+    if (fromEnv) return fromEnv;
+    const { protocol, hostname } = window.location;
+    return `${protocol}//${hostname}:8000`;
+  }
+  return fromEnv || "http://localhost:8000";
+}
 
-const BASE = API_BASE + "/api/v1";
+function apiV1Base(): string {
+  return getApiBase() + "/api/v1";
+}
 
 async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
-  const res = await fetch(BASE + path, {
+  const res = await fetch(apiV1Base() + path, {
     headers: { "Content-Type": "application/json", ...init?.headers },
     ...init,
   });
@@ -52,7 +60,7 @@ export const api = {
         body: JSON.stringify({ title }),
       }),
     delete: async (id: string) => {
-      const res = await fetch(BASE + "/threads/" + id, {
+      const res = await fetch(apiV1Base() + "/threads/" + id, {
         method: "DELETE",
         headers: { "Content-Type": "application/json" },
       });

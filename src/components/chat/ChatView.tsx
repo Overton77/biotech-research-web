@@ -31,10 +31,23 @@ export function ChatView({ threadId, initialMessages }: ChatViewProps) {
     reset,
   } = useMessageStore();
 
+  // Reset only when switching threads — not when React Query refetches `initialMessages`
+  // (a new array reference there used to wipe optimistic/streaming state and looked like "no messages").
   useEffect(() => {
     reset();
-    if (initialMessages?.length) setMessages(initialMessages);
-  }, [threadId, reset, initialMessages, setMessages]);
+  }, [threadId, reset]);
+
+  useEffect(() => {
+    if (initialMessages?.length) {
+      if (process.env.NODE_ENV === "development") {
+        console.debug("[ChatView] hydrate from server", {
+          threadId,
+          count: initialMessages.length,
+        });
+      }
+      setMessages(initialMessages);
+    }
+  }, [threadId, initialMessages, setMessages]);
 
   useEffect(() => {
     socket.emit("join_thread", { thread_id: threadId });

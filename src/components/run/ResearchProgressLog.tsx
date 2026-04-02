@@ -33,7 +33,11 @@ const EVENT_COLORS: Record<string, string> = {
 function formatTime(iso: string): string {
   try {
     const d = new Date(iso);
-    return d.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", second: "2-digit" });
+    return d.toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+      second: "2-digit",
+    });
   } catch {
     return "";
   }
@@ -54,8 +58,17 @@ function summarizeEvent(e: ResearchProgressPayload): string {
       return `Tool ${p.tool_name} — done${p.result_summary ? ` (${p.result_summary.slice(0, 60)})` : ""}`;
     case "task_started":
       return `Task ${p.task_name ?? p.task_id} started`;
-    case "task_completed":
-      return `Task ${p.task_name ?? p.task_id} completed`;
+    case "task_completed": {
+      const details: string[] = [];
+      if (p.duration_seconds != null)
+        details.push(`${p.duration_seconds.toFixed(1)}s`);
+      if (p.artifact_count != null && p.artifact_count > 0)
+        details.push(
+          `${p.artifact_count} artifact${p.artifact_count !== 1 ? "s" : ""}`,
+        );
+      const base = `Task ${p.task_name ?? p.task_id} completed`;
+      return details.length > 0 ? `${base} (${details.join(", ")})` : base;
+    }
     case "task_failed":
       return `Task ${p.task_name ?? p.task_id} failed${p.error ? `: ${p.error.slice(0, 80)}` : ""}`;
     default:
@@ -63,7 +76,10 @@ function summarizeEvent(e: ResearchProgressPayload): string {
   }
 }
 
-export function ResearchProgressLog({ events, maxHeight = "100%" }: ResearchProgressLogProps) {
+export function ResearchProgressLog({
+  events,
+  maxHeight = "100%",
+}: ResearchProgressLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
   const [paused, setPaused] = useState(false);
 
@@ -95,7 +111,10 @@ export function ResearchProgressLog({ events, maxHeight = "100%" }: ResearchProg
         ) : (
           <div className="divide-y divide-border/50">
             {events.map((e, i) => (
-              <div key={i} className="flex items-start gap-3 px-4 py-2 hover:bg-muted/30 transition-colors">
+              <div
+                key={i}
+                className="flex items-start gap-3 px-4 py-2 hover:bg-muted/30 transition-colors"
+              >
                 <span className="text-[10px] font-mono text-muted-foreground shrink-0 pt-0.5 w-16">
                   {formatTime(e.timestamp)}
                 </span>
@@ -104,7 +123,7 @@ export function ResearchProgressLog({ events, maxHeight = "100%" }: ResearchProg
                 >
                   {e.event_type}
                 </span>
-                <span className="text-xs text-foreground/80 min-w-0 break-words">
+                <span className="text-xs text-foreground/80 min-w-0 wrap-break">
                   {summarizeEvent(e)}
                 </span>
               </div>
