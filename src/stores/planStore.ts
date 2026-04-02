@@ -1,9 +1,11 @@
 import { create } from "zustand";
+import type { ResearchPlan } from "@/types/api";
 
 type MissionStatus = "idle" | "compiling" | "launched" | "error";
 
 interface PlanStore {
-  currentPlan: Record<string, unknown> | null;
+  currentPlan: ResearchPlan | null;
+  currentThreadId: string | null;
   interruptId: string | null;
   isPanelOpen: boolean;
 
@@ -11,7 +13,7 @@ interface PlanStore {
   missionStatus: MissionStatus;
   missionError: string | null;
 
-  setPlan: (plan: Record<string, unknown> | null, interruptId: string | null) => void;
+  setPlan: (plan: ResearchPlan | null, interruptId: string | null, threadId: string) => void;
   openPanel: () => void;
   closePanel: () => void;
   clearPlan: () => void;
@@ -24,6 +26,7 @@ interface PlanStore {
 
 export const usePlanStore = create<PlanStore>((set) => ({
   currentPlan: null,
+  currentThreadId: null,
   interruptId: null,
   isPanelOpen: false,
 
@@ -31,12 +34,28 @@ export const usePlanStore = create<PlanStore>((set) => ({
   missionStatus: "idle",
   missionError: null,
 
-  setPlan: (currentPlan, interruptId) =>
-    set({ currentPlan, interruptId, isPanelOpen: true, missionStatus: "idle", missionId: null, missionError: null }),
+  setPlan: (currentPlan, interruptId, threadId) =>
+    set({
+      currentPlan,
+      currentThreadId: threadId,
+      interruptId,
+      isPanelOpen: true,
+      missionStatus: "idle",
+      missionId: null,
+      missionError: null,
+    }),
   openPanel: () => set({ isPanelOpen: true }),
   closePanel: () => set({ isPanelOpen: false }),
   clearPlan: () =>
-    set({ currentPlan: null, interruptId: null, isPanelOpen: false, missionId: null, missionStatus: "idle", missionError: null }),
+    set({
+      currentPlan: null,
+      currentThreadId: null,
+      interruptId: null,
+      isPanelOpen: false,
+      missionId: null,
+      missionStatus: "idle",
+      missionError: null,
+    }),
 
   setMissionCompiling: () => set({ missionStatus: "compiling", missionError: null }),
   setMissionLaunched: (missionId) => set({ missionStatus: "launched", missionId, interruptId: null }),

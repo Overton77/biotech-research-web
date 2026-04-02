@@ -23,6 +23,7 @@ export function ChatView({ threadId, initialMessages }: ChatViewProps) {
     streamingContent,
     isStreaming,
     activeToolName,
+    startStreaming,
     appendToken,
     finalizeStream,
     setMessages,
@@ -66,9 +67,9 @@ export function ChatView({ threadId, initialMessages }: ChatViewProps) {
       if (data.thread_id !== threadId) return;
       setActiveTool(null);
     };
-    const onStreamEnd = (data: { thread_id?: string }) => {
+    const onStreamEnd = (data: { thread_id?: string; assistant_content?: string }) => {
       if (data.thread_id !== threadId) return;
-      finalizeStream(threadId);
+      finalizeStream(threadId, data.assistant_content);
     };
     const onError = (data: { message?: string; thread_id?: string }) => {
       if (data.thread_id && data.thread_id !== threadId) return;
@@ -120,10 +121,11 @@ export function ChatView({ threadId, initialMessages }: ChatViewProps) {
         created_at: new Date().toISOString(),
         metadata: {},
       });
+      startStreaming();
       socket.emit("send_message", { thread_id: threadId, content });
       setInput("");
     },
-    [threadId, isStreaming, addMessage, socket, input],
+    [threadId, isStreaming, addMessage, socket, input, startStreaming],
   );
 
   const handleKeyDown = useCallback(

@@ -78,15 +78,15 @@ export default function RunPage({ params }: PageProps) {
 
   // Initialize task statuses from mission task_defs
   useEffect(() => {
-    if (!mission?.task_defs) return;
+    if (!mission?.tasks) return;
     setTaskStatuses((prev) => {
       const next = { ...prev };
-      for (const td of mission.task_defs) {
-        if (!next[td.task_id]) next[td.task_id] = "pending";
+      for (const task of mission.tasks) {
+        if (!next[task.task_id]) next[task.task_id] = "pending";
       }
       return next;
     });
-  }, [mission?.task_defs]);
+  }, [mission?.tasks]);
 
   // Sync task statuses from status summary
   useEffect(() => {
@@ -99,9 +99,9 @@ export default function RunPage({ params }: PageProps) {
     });
   }, [statusSummary]);
 
-  const taskIds = mission?.task_defs.map((td) => td.task_id) ?? [];
-  const taskNames = mission?.task_defs.reduce(
-    (acc, td) => ({ ...acc, [td.task_id]: td.name }),
+  const taskIds = mission?.tasks.map((task) => task.task_id) ?? [];
+  const taskNames = mission?.tasks.reduce(
+    (acc, task) => ({ ...acc, [task.task_id]: task.title }),
     {} as Record<string, string>,
   );
 

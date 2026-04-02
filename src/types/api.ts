@@ -41,32 +41,22 @@ export interface StarterSource {
   description: string;
 }
 
-export interface TaskInputRef {
-  name: string;
-  source: "task_output" | "user_provided" | "external";
-  source_task_id?: string;
-  output_name?: string;
-  description: string;
-}
-
-export interface TaskOutputSpec {
-  name: string;
-  type: "text" | "markdown" | "json" | "file" | "s3_ref";
-  description: string;
-  required: boolean;
-}
-
 export interface ResearchTask {
   id: string;
   title: string;
   description: string;
   stage: string;
-  sub_stage?: string;
-  agent_config: AgentConfig;
-  inputs: TaskInputRef[];
-  outputs: TaskOutputSpec[];
   dependencies: string[];
   estimated_duration_minutes?: number;
+  selected_tool_names: string[];
+  selected_subagent_names: string[];
+  stage_type?:
+    | "discovery"
+    | "entity_validation"
+    | "official_site_mapping"
+    | "targeted_extraction"
+    | "report_synthesis"
+    | null;
 }
 
 export interface ResearchPlan {
@@ -77,6 +67,7 @@ export interface ResearchPlan {
   stages: string[];
   tasks: ResearchTask[];
   starter_sources: StarterSource[];
+  context: string;
   status:
     | "draft"
     | "pending_approval"
@@ -85,6 +76,9 @@ export interface ResearchPlan {
     | "executing"
     | "complete"
     | "failed";
+  mission_id?: string | null;
+  workflow_id?: string | null;
+  mission_status?: string | null;
   created_at: string;
   updated_at: string;
   approved_at?: string;
@@ -114,181 +108,81 @@ export interface PaginatedResponse<T> {
   limit: number;
 }
 
-// ---------------------------------------------------------------------------
-// Mission model supporting types
-// ---------------------------------------------------------------------------
-
-export interface InputBinding {
-  source_task_id: string;
-  source_key: string;
-  required: boolean;
-  transform?: string;
-  max_tokens?: number;
-}
-
-export interface MainDeepAgentConfig {
-  model_name: string;
-  model_tier: "fast" | "standard" | "powerful";
-  system_prompt: string;
-  tool_profile_name: string;
-  filesystem_profile: string;
-  memory_profile: string;
-  allow_general_purpose_subagent: boolean;
-  max_iterations?: number;
-  skills: string[];
-  notes: Record<string, unknown>;
-}
-
-export interface CompiledSubAgentConfig {
-  name: string;
-  description: string;
-  system_prompt: string;
-  model_name?: string;
-  tool_profile_name: string;
-  filesystem_profile: string;
-  use_todo_middleware: boolean;
-  memory_profile: string;
-  workspace_suffix: string;
-  max_invocations: number;
-  expected_output_format?: string;
-  expected_output_path?: string;
-  skills: string[];
-}
-
-export interface TaskExecutionPolicy {
-  timeout_seconds: number;
-  max_retries: number;
-  persist_run_after_completion: boolean;
-  fallback_models: string[];
-  require_human_review: boolean;
-}
-
-export interface FileReference {
-  path: string;
-  name?: string;
-  description?: string;
-}
-
-export interface TaskExecutionStructuredOutput {
-  subagent_final_output_locations: FileReference[];
-  final_synthesis_reports: FileReference[];
-}
-
-export interface ResearchEvent {
-  event_type: string;
-  task_id?: string;
-  payload: Record<string, unknown>;
-  timestamp: string;
-}
-
-export interface SourceReference {
-  url: string;
-  title?: string;
-  snippet?: string;
-  accessed_at: string;
-  relevance_score?: number;
-  source_type: string;
-  tool_name?: string;
-  query?: string;
-}
-
-export interface QualityAssessment {
-  task_id: string;
-  criteria_results: Record<string, unknown>[];
-  overall_pass: boolean;
-  suggestions: string[];
-  assessed_at: string;
-}
-
-export interface MissionSummary {
-  total_tasks: number;
-  completed_tasks: number;
-  failed_tasks: number;
-  total_sources: number;
-  total_artifacts: number;
-  has_final_report: boolean;
-  completed_at?: string;
-}
-
-export interface TaskResult {
-  task_id: string;
-  status: "completed" | "failed";
-  outputs: Record<string, unknown>;
-  artifacts: ArtifactRef[];
-  events: ResearchEvent[];
-  error_message?: string;
-  started_at?: string;
-  completed_at?: string;
-  attempt_number: number;
-  structured_execution_summary?: TaskExecutionStructuredOutput;
-  sources: SourceReference[];
-  quality_assessment?: QualityAssessment;
-}
-
-// ---------------------------------------------------------------------------
-// Research Mission
-// ---------------------------------------------------------------------------
-
-export interface TaskDef {
-  task_id: string;
-  name: string;
-  stage_label?: string;
-  description: string;
-  depends_on: string[];
-  input_bindings: Record<string, InputBinding>;
-  output_schema?: Record<string, unknown>;
-  acceptance_criteria: string[];
-  main_agent: MainDeepAgentConfig;
-  compiled_subagents: CompiledSubAgentConfig[];
-  execution: TaskExecutionPolicy;
-}
-
-export interface ResearchMission {
-  id: string;
-  research_plan_id: string;
-  thread_id: string;
-  title: string;
-  goal: string;
-  global_context: Record<string, unknown>;
-  global_constraints: string[];
-  success_criteria: string[];
-  task_defs: TaskDef[];
-  dependency_map: Record<string, string[]>;
-  reverse_dependency_map: Record<string, string[]>;
-  status: "pending" | "running" | "completed" | "failed";
-  summary?: MissionSummary;
-  created_at: string;
-  updated_at: string;
-}
-
-// ---------------------------------------------------------------------------
-// Research Run
-// ---------------------------------------------------------------------------
-
 export interface ArtifactRef {
-  task_id: string;
-  name: string;
-  artifact_type: string;
-  storage: "filesystem" | "s3" | "mongo_inline";
-  path?: string;
-  content_inline?: string;
-  content_type: string;
-  created_at: string;
+  s3_uri: string;
+  s3_key: string;
+  local_path: string;
+  artifact_type: "final_report" | "intermediate_file" | "memory_report" | "agent_state";
+  filename: string;
+  size_bytes?: number | null;
+  uploaded_at: string;
 }
 
 export interface ResearchRun {
   id: string;
   mission_id: string;
   task_id: string;
-  attempt_number: number;
-  status: "completed" | "failed";
-  resolved_inputs_snapshot: Record<string, unknown>;
-  outputs_snapshot: Record<string, unknown>;
-  artifacts: ArtifactRef[];
-  error_message?: string;
-  started_at?: string;
-  completed_at?: string;
+  task_slug: string;
+  parent_task_slug?: string | null;
+  stage_type: string;
+  targets: string[];
+  dependencies: string[];
+  iteration?: number | null;
+  status: "running" | "completed" | "failed";
+  error?: string | null;
+  final_report_text: string;
+  artifacts: {
+    final_report?: ArtifactRef | null;
+    intermediate_files: ArtifactRef[];
+    memory_report_json?: ArtifactRef | null;
+    agent_state_json?: ArtifactRef | null;
+  };
+  memory_report?: {
+    mission_id: string;
+    summary: string;
+    file_paths: string[];
+    recorded_at: string;
+  } | null;
+  langsmith_run_id?: string | null;
+  started_at: string;
+  completed_at?: string | null;
+}
+
+export interface MissionTask {
+  task_id: string;
+  task_slug: string;
+  title: string;
+  stage: string;
+  dependencies: string[];
+  selected_tool_names: string[];
+  selected_subagent_names: string[];
+  stage_type?: ResearchTask["stage_type"];
+}
+
+export interface ResearchMission {
+  id: string;
+  mission_id: string;
+  plan_id?: string | null;
+  thread_id?: string | null;
+  workflow_id?: string | null;
+  title: string;
+  objective: string;
+  mission_name: string;
+  base_domain: string;
+  mission_type: "stage_based" | "iterative";
+  targets: string[];
+  status: "running" | "completed" | "partial" | "failed";
+  error?: string | null;
+  task_count: number;
+  completed_task_count: number;
+  failed_task_count: number;
+  running_task_count: number;
+  tasks: MissionTask[];
+  stages: ResearchRun[];
+  langsmith_run_id?: string | null;
   created_at: string;
+  updated_at: string;
+  completed_at?: string | null;
 }
 
 // ---------------------------------------------------------------------------
@@ -301,9 +195,11 @@ export interface MissionStatusSummary {
   total_tasks: number;
   completed_tasks: number;
   failed_tasks: number;
+  running_tasks: number;
   pending_tasks: number;
   completed_task_ids: string[];
   failed_task_ids: string[];
+  running_task_ids: string[];
 }
 
 // ---------------------------------------------------------------------------
@@ -311,16 +207,30 @@ export interface MissionStatusSummary {
 // ---------------------------------------------------------------------------
 
 export interface MissionOutputs {
-  mission: Record<string, unknown> | null;
-  mission_draft: Record<string, unknown> | null;
+  mission: ResearchMission | null;
+  summary: MissionStatusSummary | null;
   final_report_markdown: string | null;
-  final_report_json: Record<string, unknown> | null;
-  summary: Record<string, unknown> | null;
-  task_runs_index: Record<string, unknown> | null;
+  stage_reports: Array<{
+    run_id: string;
+    task_id: string;
+    task_slug: string;
+    iteration?: number | null;
+    stage_type: string;
+    status: string;
+    final_report_text: string;
+  }>;
+  artifacts: Array<{
+    run_id: string;
+    task_id: string;
+    task_slug: string;
+    iteration?: number | null;
+    artifact: ArtifactRef;
+  }>;
+  task_runs_index: ResearchRun[];
 }
 
 export interface TaskRunOutputs {
-  run: Record<string, unknown> | null;
+  run: ResearchRun | null;
   resolved_inputs: Record<string, unknown> | null;
   outputs: Record<string, unknown> | null;
   events: Record<string, unknown> | null;
@@ -350,6 +260,15 @@ export interface ResearchProgressPayload {
     summary?: string;
     error?: string;
     status?: string;
+    stage_count?: number;
+    stage_slugs?: string[];
+    completed_stage_slugs?: string[];
+    failed_stage_slugs?: string[];
+    level_index?: number;
+    report_count?: number;
+    plan_id?: string;
+    thread_id?: string;
+    workflow_id?: string;
     [key: string]: unknown;
   };
   timestamp: string;

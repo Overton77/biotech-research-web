@@ -9,6 +9,11 @@ interface ResearchProgressLogProps {
 }
 
 const EVENT_ICONS: Record<string, string> = {
+  mission_started: "play",
+  mission_completed: "check",
+  mission_failed: "x",
+  level_started: "layers",
+  level_completed: "layers",
   agent_started: "play",
   agent_completed: "check",
   model_response: "cpu",
@@ -20,6 +25,11 @@ const EVENT_ICONS: Record<string, string> = {
 };
 
 const EVENT_COLORS: Record<string, string> = {
+  mission_started: "text-blue-600",
+  mission_completed: "text-emerald-600",
+  mission_failed: "text-red-500",
+  level_started: "text-sky-500",
+  level_completed: "text-sky-600",
   agent_started: "text-blue-500",
   agent_completed: "text-emerald-500",
   model_response: "text-purple-500",
@@ -46,6 +56,16 @@ function formatTime(iso: string): string {
 function summarizeEvent(e: ResearchProgressPayload): string {
   const p = e.payload;
   switch (e.event_type) {
+    case "mission_started":
+      return `Mission started${p.stage_count ? ` with ${p.stage_count} stages` : ""}`;
+    case "mission_completed":
+      return `Mission completed (${p.stages_completed ?? 0} completed, ${p.stages_failed ?? 0} failed)`;
+    case "mission_failed":
+      return `Mission failed${p.error ? `: ${String(p.error).slice(0, 80)}` : ""}`;
+    case "level_started":
+      return `Level ${p.level_index ?? 0} started`;
+    case "level_completed":
+      return `Level ${p.level_index ?? 0} completed`;
     case "agent_started":
       return `${p.agent_role === "subagent" ? `Subagent ${p.subagent_name}` : "Main agent"} started`;
     case "agent_completed":
@@ -61,7 +81,7 @@ function summarizeEvent(e: ResearchProgressPayload): string {
     case "task_completed": {
       const details: string[] = [];
       if (p.duration_seconds != null)
-        details.push(`${p.duration_seconds.toFixed(1)}s`);
+        details.push(`${Number(p.duration_seconds).toFixed(1)}s`);
       if (p.artifact_count != null && p.artifact_count > 0)
         details.push(
           `${p.artifact_count} artifact${p.artifact_count !== 1 ? "s" : ""}`,

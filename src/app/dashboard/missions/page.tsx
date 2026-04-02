@@ -35,7 +35,7 @@ export default function MissionsListPage() {
               <thead>
                 <tr className="border-b border-border bg-muted/30">
                   <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Title</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Goal</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Objective</th>
                   <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Tasks</th>
                   <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Status</th>
                   <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Created</th>
@@ -46,8 +46,8 @@ export default function MissionsListPage() {
                 {data.items.map((m) => (
                   <tr key={m.id} className="hover:bg-muted/20 transition-colors">
                     <td className="px-4 py-3 font-medium truncate max-w-[180px]">{m.title}</td>
-                    <td className="px-4 py-3 text-muted-foreground truncate max-w-[220px]">{m.goal}</td>
-                    <td className="px-4 py-3 text-xs">{m.task_defs.length}</td>
+                    <td className="px-4 py-3 text-muted-foreground truncate max-w-[220px]">{m.objective}</td>
+                    <td className="px-4 py-3 text-xs">{m.task_count}</td>
                     <td className="px-4 py-3"><StatusBadge status={m.status} /></td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {new Date(m.created_at).toLocaleDateString()}

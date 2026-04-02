@@ -6,8 +6,6 @@ import {
   type ResearchPlan,
   type ResearchTask,
   type StarterSource,
-  type TaskInputRef,
-  type TaskOutputSpec,
 } from "@/types/api";
 import {
   useApprovePlanMutation,
@@ -29,23 +27,11 @@ function makeEmptyStarterSource(): StarterSource {
   };
 }
 
-function makeEmptyTaskInput(): TaskInputRef {
-  return {
-    name: "",
-    source: "user_provided",
-    description: "",
-    source_task_id: undefined,
-    output_name: undefined,
-  };
-}
-
-function makeEmptyTaskOutput(): TaskOutputSpec {
-  return {
-    name: "",
-    type: "text",
-    description: "",
-    required: true,
-  };
+function parseCsv(value: string): string[] {
+  return value
+    .split(",")
+    .map((item) => item.trim())
+    .filter(Boolean);
 }
 
 function makeEmptyTask(): ResearchTask {
@@ -54,27 +40,26 @@ function makeEmptyTask(): ResearchTask {
     title: "",
     description: "",
     stage: "",
-    sub_stage: "",
-    agent_config: {} as never, // intentionally ignored in UI
-    inputs: [],
-    outputs: [],
     dependencies: [],
     estimated_duration_minutes: undefined,
+    selected_tool_names: ["search_web", "extract_from_urls", "map_website"],
+    selected_subagent_names: [],
+    stage_type: null,
   };
 }
 
 function normalizePlanForEdit(plan: ResearchPlan): ResearchPlan {
   return {
     ...plan,
+    context: plan.context ?? "",
     approver_notes: plan.approver_notes ?? "",
     starter_sources: plan.starter_sources ?? [],
     stages: plan.stages ?? [],
     tasks: (plan.tasks ?? []).map((task) => ({
       ...task,
-      sub_stage: task.sub_stage ?? "",
-      inputs: task.inputs ?? [],
-      outputs: task.outputs ?? [],
       dependencies: task.dependencies ?? [],
+      selected_tool_names: task.selected_tool_names ?? [],
+      selected_subagent_names: task.selected_subagent_names ?? [],
       estimated_duration_minutes: task.estimated_duration_minutes,
     })),
   };
@@ -195,118 +180,8 @@ export function PlanActions({
     }));
   }
 
-  function updateDependency(
-    taskIndex: number,
-    depIndex: number,
-    value: string,
-  ) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      const dependencies = [...tasks[taskIndex].dependencies];
-      dependencies[depIndex] = value;
-      tasks[taskIndex] = { ...tasks[taskIndex], dependencies };
-      return { ...prev, tasks };
-    });
-  }
-
-  function addDependency(taskIndex: number) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      tasks[taskIndex] = {
-        ...tasks[taskIndex],
-        dependencies: [...tasks[taskIndex].dependencies, ""],
-      };
-      return { ...prev, tasks };
-    });
-  }
-
-  function removeDependency(taskIndex: number, depIndex: number) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      tasks[taskIndex] = {
-        ...tasks[taskIndex],
-        dependencies: tasks[taskIndex].dependencies.filter(
-          (_, i) => i !== depIndex,
-        ),
-      };
-      return { ...prev, tasks };
-    });
-  }
-
-  function updateTaskInput(
-    taskIndex: number,
-    inputIndex: number,
-    patch: Partial<TaskInputRef>,
-  ) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      const inputs = [...tasks[taskIndex].inputs];
-      inputs[inputIndex] = { ...inputs[inputIndex], ...patch };
-      tasks[taskIndex] = { ...tasks[taskIndex], inputs };
-      return { ...prev, tasks };
-    });
-  }
-
-  function addTaskInput(taskIndex: number) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      tasks[taskIndex] = {
-        ...tasks[taskIndex],
-        inputs: [...tasks[taskIndex].inputs, makeEmptyTaskInput()],
-      };
-      return { ...prev, tasks };
-    });
-  }
-
-  function removeTaskInput(taskIndex: number, inputIndex: number) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      tasks[taskIndex] = {
-        ...tasks[taskIndex],
-        inputs: tasks[taskIndex].inputs.filter((_, i) => i !== inputIndex),
-      };
-      return { ...prev, tasks };
-    });
-  }
-
-  function updateTaskOutput(
-    taskIndex: number,
-    outputIndex: number,
-    patch: Partial<TaskOutputSpec>,
-  ) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      const outputs = [...tasks[taskIndex].outputs];
-      outputs[outputIndex] = { ...outputs[outputIndex], ...patch };
-      tasks[taskIndex] = { ...tasks[taskIndex], outputs };
-      return { ...prev, tasks };
-    });
-  }
-
-  function addTaskOutput(taskIndex: number) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      tasks[taskIndex] = {
-        ...tasks[taskIndex],
-        outputs: [...tasks[taskIndex].outputs, makeEmptyTaskOutput()],
-      };
-      return { ...prev, tasks };
-    });
-  }
-
-  function removeTaskOutput(taskIndex: number, outputIndex: number) {
-    setEditedPlan((prev) => {
-      const tasks = [...prev.tasks];
-      tasks[taskIndex] = {
-        ...tasks[taskIndex],
-        outputs: tasks[taskIndex].outputs.filter((_, i) => i !== outputIndex),
-      };
-      return { ...prev, tasks };
-    });
-  }
-
   function buildPatch(
-    original: ResearchPlan,
+    _original: ResearchPlan,
     edited: ResearchPlan,
   ): Partial<ResearchPlan> {
     return {
@@ -315,6 +190,7 @@ export function PlanActions({
       stages: edited.stages,
       tasks: edited.tasks,
       starter_sources: edited.starter_sources,
+      context: edited.context,
       approver_notes: edited.approver_notes,
     };
   }
@@ -390,6 +266,16 @@ export function PlanActions({
         <textarea
           value={editedPlan.objective}
           onChange={(e) => setTopLevel("objective", e.target.value)}
+          rows={3}
+          className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+        />
+      </label>
+
+      <label className="block space-y-1">
+        <span className="text-xs text-muted-foreground">Context</span>
+        <textarea
+          value={editedPlan.context}
+          onChange={(e) => setTopLevel("context", e.target.value)}
           rows={3}
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
         />
@@ -517,19 +403,17 @@ export function PlanActions({
 
             <div className="grid gap-3 md:grid-cols-3">
               <input
+                value={task.id}
+                onChange={(e) => updateTask(taskIndex, { id: e.target.value })}
+                placeholder="Task id"
+                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+              <input
                 value={task.stage}
                 onChange={(e) =>
                   updateTask(taskIndex, { stage: e.target.value })
                 }
                 placeholder="Stage"
-                className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-              />
-              <input
-                value={task.sub_stage ?? ""}
-                onChange={(e) =>
-                  updateTask(taskIndex, { sub_stage: e.target.value })
-                }
-                placeholder="Sub-stage"
                 className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
               />
               <input
@@ -548,210 +432,67 @@ export function PlanActions({
               />
             </div>
 
-            <div className="space-y-2">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">
-                  Dependencies
-                </span>
-                <button
-                  type="button"
-                  onClick={() => addDependency(taskIndex)}
-                  className="rounded border border-border px-2 py-1 text-xs"
-                >
-                  Add dependency
-                </button>
-              </div>
+            <label className="block space-y-1">
+              <span className="text-xs text-muted-foreground">Dependencies</span>
+              <input
+                value={task.dependencies.join(", ")}
+                onChange={(e) =>
+                  updateTask(taskIndex, { dependencies: parseCsv(e.target.value) })
+                }
+                placeholder="task-a, task-b"
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              />
+            </label>
 
-              {task.dependencies.map((dep, depIndex) => (
-                <div key={depIndex} className="flex gap-2">
-                  <input
-                    value={dep}
-                    onChange={(e) =>
-                      updateDependency(taskIndex, depIndex, e.target.value)
-                    }
-                    placeholder="Task id dependency"
-                    className="flex-1 rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-                  <button
-                    type="button"
-                    onClick={() => removeDependency(taskIndex, depIndex)}
-                    className="rounded border border-red-300 px-2 py-1 text-xs text-red-700"
-                  >
-                    Remove
-                  </button>
-                </div>
-              ))}
+            <div className="grid gap-3 md:grid-cols-2">
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Selected tools</span>
+                <input
+                  value={task.selected_tool_names.join(", ")}
+                  onChange={(e) =>
+                    updateTask(taskIndex, {
+                      selected_tool_names: parseCsv(e.target.value),
+                    })
+                  }
+                  placeholder="search_web, extract_from_urls"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+              </label>
+
+              <label className="block space-y-1">
+                <span className="text-xs text-muted-foreground">Selected subagents</span>
+                <input
+                  value={task.selected_subagent_names.join(", ")}
+                  onChange={(e) =>
+                    updateTask(taskIndex, {
+                      selected_subagent_names: parseCsv(e.target.value),
+                    })
+                  }
+                  placeholder="browser_control, tavily_research"
+                  className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+                />
+              </label>
             </div>
 
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Inputs</span>
-                <button
-                  type="button"
-                  onClick={() => addTaskInput(taskIndex)}
-                  className="rounded border border-border px-2 py-1 text-xs"
-                >
-                  Add input
-                </button>
-              </div>
-
-              {task.inputs.map((input, inputIndex) => (
-                <div
-                  key={inputIndex}
-                  className="space-y-2 rounded-lg border border-border p-3"
-                >
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <input
-                      value={input.name}
-                      onChange={(e) =>
-                        updateTaskInput(taskIndex, inputIndex, {
-                          name: e.target.value,
-                        })
-                      }
-                      placeholder="Input name"
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    />
-                    <select
-                      value={input.source}
-                      onChange={(e) =>
-                        updateTaskInput(taskIndex, inputIndex, {
-                          source: e.target.value as TaskInputRef["source"],
-                        })
-                      }
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="user_provided">user_provided</option>
-                      <option value="task_output">task_output</option>
-                      <option value="external">external</option>
-                    </select>
-                  </div>
-
-                  <textarea
-                    value={input.description}
-                    onChange={(e) =>
-                      updateTaskInput(taskIndex, inputIndex, {
-                        description: e.target.value,
-                      })
-                    }
-                    placeholder="Input description"
-                    rows={2}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <input
-                      value={input.source_task_id ?? ""}
-                      onChange={(e) =>
-                        updateTaskInput(taskIndex, inputIndex, {
-                          source_task_id: e.target.value || undefined,
-                        })
-                      }
-                      placeholder="Source task id"
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    />
-                    <input
-                      value={input.output_name ?? ""}
-                      onChange={(e) =>
-                        updateTaskInput(taskIndex, inputIndex, {
-                          output_name: e.target.value || undefined,
-                        })
-                      }
-                      placeholder="Output name"
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    />
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={() => removeTaskInput(taskIndex, inputIndex)}
-                    className="rounded border border-red-300 px-2 py-1 text-xs text-red-700"
-                  >
-                    Remove input
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs text-muted-foreground">Outputs</span>
-                <button
-                  type="button"
-                  onClick={() => addTaskOutput(taskIndex)}
-                  className="rounded border border-border px-2 py-1 text-xs"
-                >
-                  Add output
-                </button>
-              </div>
-
-              {task.outputs.map((output, outputIndex) => (
-                <div
-                  key={outputIndex}
-                  className="space-y-2 rounded-lg border border-border p-3"
-                >
-                  <div className="grid gap-2 md:grid-cols-2">
-                    <input
-                      value={output.name}
-                      onChange={(e) =>
-                        updateTaskOutput(taskIndex, outputIndex, {
-                          name: e.target.value,
-                        })
-                      }
-                      placeholder="Output name"
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    />
-                    <select
-                      value={output.type}
-                      onChange={(e) =>
-                        updateTaskOutput(taskIndex, outputIndex, {
-                          type: e.target.value as TaskOutputSpec["type"],
-                        })
-                      }
-                      className="rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                    >
-                      <option value="text">text</option>
-                      <option value="markdown">markdown</option>
-                      <option value="json">json</option>
-                      <option value="file">file</option>
-                      <option value="s3_ref">s3_ref</option>
-                    </select>
-                  </div>
-
-                  <textarea
-                    value={output.description}
-                    onChange={(e) =>
-                      updateTaskOutput(taskIndex, outputIndex, {
-                        description: e.target.value,
-                      })
-                    }
-                    placeholder="Output description"
-                    rows={2}
-                    className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
-                  />
-
-                  <label className="flex items-center gap-2 text-sm">
-                    <input
-                      type="checkbox"
-                      checked={output.required}
-                      onChange={(e) =>
-                        updateTaskOutput(taskIndex, outputIndex, {
-                          required: e.target.checked,
-                        })
-                      }
-                    />
-                    Required
-                  </label>
-
-                  <button
-                    type="button"
-                    onClick={() => removeTaskOutput(taskIndex, outputIndex)}
-                    className="rounded border border-red-300 px-2 py-1 text-xs text-red-700"
-                  >
-                    Remove output
-                  </button>
-                </div>
-              ))}
-            </div>
+            <label className="block space-y-1">
+              <span className="text-xs text-muted-foreground">Stage type</span>
+              <select
+                value={task.stage_type ?? ""}
+                onChange={(e) =>
+                  updateTask(taskIndex, {
+                    stage_type: (e.target.value || null) as ResearchTask["stage_type"],
+                  })
+                }
+                className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
+              >
+                <option value="">(infer later)</option>
+                <option value="discovery">discovery</option>
+                <option value="entity_validation">entity_validation</option>
+                <option value="official_site_mapping">official_site_mapping</option>
+                <option value="targeted_extraction">targeted_extraction</option>
+                <option value="report_synthesis">report_synthesis</option>
+              </select>
+            </label>
           </div>
         ))}
       </div>

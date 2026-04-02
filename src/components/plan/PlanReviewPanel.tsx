@@ -5,13 +5,14 @@ import Link from "next/link";
 import { useSocket } from "@/providers/SocketProvider";
 import { usePlanStore } from "@/stores/planStore";
 import { PlanActions } from "./PlanActions";
+import type { ResearchPlan } from "@/types/api";
 
 interface PlanReviewPanelProps {
   threadId: string;
 }
 
 interface PlanReadyPayload {
-  plan?: Record<string, unknown>;
+  plan?: ResearchPlan;
   thread_id?: string;
   interrupt_id?: string;
 }
@@ -38,6 +39,7 @@ export function PlanReviewPanel({ threadId }: PlanReviewPanelProps) {
   const socket = useSocket();
   const {
     currentPlan,
+    currentThreadId,
     interruptId,
     isPanelOpen,
     missionStatus,
@@ -53,7 +55,7 @@ export function PlanReviewPanel({ threadId }: PlanReviewPanelProps) {
   useEffect(() => {
     const onPlanReady = (data: PlanReadyPayload) => {
       if (data.thread_id !== threadId) return;
-      if (data.plan) setPlan(data.plan, data.interrupt_id ?? null);
+      if (data.plan) setPlan(data.plan, data.interrupt_id ?? null, threadId);
     };
 
     const onMissionCompiling = (data: MissionCompilingPayload) => {
@@ -83,10 +85,10 @@ export function PlanReviewPanel({ threadId }: PlanReviewPanelProps) {
     };
   }, [socket, threadId, setPlan, setMissionCompiling, setMissionLaunched, setMissionError]);
 
-  if (!isPanelOpen || !currentPlan) return null;
+  if (!isPanelOpen || !currentPlan || (currentThreadId && currentThreadId !== threadId)) return null;
 
   const plan = currentPlan;
-  const tasks = (plan.tasks ?? []) as Array<Record<string, unknown>>;
+  const tasks = plan.tasks ?? [];
   const stages = (plan.stages ?? []) as string[];
 
   return (
@@ -133,7 +135,7 @@ export function PlanReviewPanel({ threadId }: PlanReviewPanelProps) {
                   <p className="text-gray-600 dark:text-gray-400 mt-0.5 text-xs">{String(t.description || "")}</p>
                   {t.stage && (
                     <span className="inline-block mt-1 text-xs text-gray-500 bg-muted px-1.5 py-0.5 rounded">
-                      {String(t.stage)}
+                      {t.stage}
                     </span>
                   )}
                 </li>

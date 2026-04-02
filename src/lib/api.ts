@@ -121,7 +121,7 @@ export const api = {
       apiFetch<TaskRunOutputs>(`/missions/${missionId}/runs/${taskId}/outputs?attempt_number=${attemptNumber}`),
     artifacts: (missionId: string, taskId: string, attemptNumber = 1) =>
       apiFetch<ArtifactRef[]>(`/missions/${missionId}/runs/${taskId}/artifacts?attempt_number=${attemptNumber}`),
-    artifactContent: (missionId: string, taskId: string, artifactName: string, artifactType = "report", attemptNumber = 1) =>
+    artifactContent: (missionId: string, taskId: string, artifactName: string, artifactType = "final_report", attemptNumber = 1) =>
       apiFetch<{ artifact_name: string; artifact_type: string; content: string }>(
         `/missions/${missionId}/runs/${taskId}/artifacts/${encodeURIComponent(artifactName)}/content?attempt_number=${attemptNumber}&artifact_type=${encodeURIComponent(artifactType)}`,
       ),

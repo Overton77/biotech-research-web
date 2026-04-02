@@ -10,11 +10,11 @@ export function useUpdatePlanMutation() {
       api.plans.update(id, patch),
 
     onSuccess: async (updatedPlan) => {
-      queryClient.setQueryData(["plans", updatedPlan.id], updatedPlan);
+      queryClient.setQueryData(["plan", updatedPlan.id], updatedPlan);
 
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["plans"] }),
-        queryClient.invalidateQueries({ queryKey: ["plans", updatedPlan.id] }),
+        queryClient.invalidateQueries({ queryKey: ["plan", updatedPlan.id] }),
       ]);
     },
   });
@@ -30,7 +30,7 @@ export function useApprovePlanMutation() {
     onSuccess: async (_, variables) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["plans"] }),
-        queryClient.invalidateQueries({ queryKey: ["plans", variables.id] }),
+        queryClient.invalidateQueries({ queryKey: ["plan", variables.id] }),
       ]);
     },
   });
@@ -45,7 +45,7 @@ export function useLaunchPlanMutation() {
     onSuccess: async (_, variables) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["plans"] }),
-        queryClient.invalidateQueries({ queryKey: ["plans", variables.id] }),
+        queryClient.invalidateQueries({ queryKey: ["plan", variables.id] }),
       ]);
     },
   });
@@ -71,7 +71,7 @@ export function useSaveAndApprovePlanMutation() {
     onSuccess: async (_, variables) => {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["plans"] }),
-        queryClient.invalidateQueries({ queryKey: ["plans", variables.id] }),
+        queryClient.invalidateQueries({ queryKey: ["plan", variables.id] }),
       ]);
     },
   });

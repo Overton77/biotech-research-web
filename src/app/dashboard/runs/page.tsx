@@ -34,9 +34,9 @@ export default function RunsListPage() {
             <table className="w-full text-sm">
               <thead>
                 <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Task ID</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Task</th>
                   <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Mission</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Attempt</th>
+                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Iteration</th>
                   <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Status</th>
                   <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Started</th>
                   <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Completed</th>
@@ -46,7 +46,7 @@ export default function RunsListPage() {
               <tbody className="divide-y divide-border">
                 {data.items.map((r) => (
                   <tr key={r.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3 font-mono text-xs truncate max-w-[150px]">{r.task_id}</td>
+                    <td className="px-4 py-3 font-mono text-xs truncate max-w-[150px]">{r.task_slug}</td>
                     <td className="px-4 py-3 font-mono text-xs truncate max-w-[120px]">
                       <Link
                         href={`/runs/${r.mission_id}`}
@@ -55,7 +55,7 @@ export default function RunsListPage() {
                         {r.mission_id.slice(-8)}
                       </Link>
                     </td>
-                    <td className="px-4 py-3 text-xs">{r.attempt_number}</td>
+                    <td className="px-4 py-3 text-xs">{r.iteration ?? 1}</td>
                     <td className="px-4 py-3"><StatusBadge status={r.status} /></td>
                     <td className="px-4 py-3 text-xs text-muted-foreground">
                       {r.started_at ? new Date(r.started_at).toLocaleString() : "—"}

@@ -111,7 +111,7 @@ export default function DashboardPage() {
               <div className="min-w-0 flex-1">
                 <p className="text-sm font-medium truncate">{m.title}</p>
                 <p className="text-xs text-muted-foreground">
-                  {m.task_defs.length} tasks | {new Date(m.created_at).toLocaleDateString()}
+                  {m.task_count} tasks | {new Date(m.created_at).toLocaleDateString()}
                 </p>
               </div>
               <div className="flex items-center gap-2 ml-3 shrink-0">

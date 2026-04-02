@@ -40,7 +40,7 @@ function CollapsibleSection({
 
 function CodeBlock({ content }: { content: string }) {
   return (
-    <pre className="mt-2 p-3 rounded-md bg-muted text-xs font-mono overflow-x-auto max-h-96 overflow-y-auto whitespace-pre-wrap break-words">
+    <pre className="mt-2 p-3 rounded-md bg-muted text-xs font-mono overflow-x-auto max-h-96 overflow-y-auto whitespace-pre-wrap wrap-break-word">
       {content}
     </pre>
   );
@@ -89,20 +89,20 @@ export function MissionOutputsView({ missionId }: MissionOutputsViewProps) {
       )}
 
       {outputs?.mission && (
-        <CollapsibleSection title="Mission JSON">
+        <CollapsibleSection title="Mission Mongo Document">
           <CodeBlock content={JSON.stringify(outputs.mission, null, 2)} />
         </CollapsibleSection>
       )}
 
-      {outputs?.mission_draft && (
-        <CollapsibleSection title="Mission Draft">
-          <CodeBlock content={JSON.stringify(outputs.mission_draft, null, 2)} />
+      {outputs?.stage_reports && outputs.stage_reports.length > 0 && (
+        <CollapsibleSection title="Stage Reports">
+          <CodeBlock content={JSON.stringify(outputs.stage_reports, null, 2)} />
         </CollapsibleSection>
       )}
 
-      {outputs?.final_report_json && (
-        <CollapsibleSection title="Final Report (JSON)">
-          <CodeBlock content={JSON.stringify(outputs.final_report_json, null, 2)} />
+      {outputs?.artifacts && outputs.artifacts.length > 0 && (
+        <CollapsibleSection title="Artifacts">
+          <CodeBlock content={JSON.stringify(outputs.artifacts, null, 2)} />
         </CollapsibleSection>
       )}
 
@@ -122,7 +122,7 @@ export function MissionOutputsView({ missionId }: MissionOutputsViewProps) {
                 className="border border-border rounded-lg p-3"
               >
                 <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{r.task_id}</span>
+                  <span className="text-sm font-medium">{r.task_slug}</span>
                   <span
                     className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                       r.status === "completed"
@@ -134,21 +134,31 @@ export function MissionOutputsView({ missionId }: MissionOutputsViewProps) {
                   </span>
                 </div>
                 <div className="text-xs text-muted-foreground mt-1">
-                  Attempt {r.attempt_number}
+                  Iteration {r.iteration ?? 1}
                   {r.started_at && ` | Started: ${new Date(r.started_at).toLocaleString()}`}
                   {r.completed_at && ` | Completed: ${new Date(r.completed_at).toLocaleString()}`}
                 </div>
-                {r.error_message && (
-                  <p className="text-xs text-red-500 mt-1 truncate">{r.error_message}</p>
+                {r.error && (
+                  <p className="text-xs text-red-500 mt-1 truncate">{r.error}</p>
                 )}
-                {r.artifacts.length > 0 && (
+                {[
+                  ...(r.artifacts.final_report ? [r.artifacts.final_report] : []),
+                  ...r.artifacts.intermediate_files,
+                  ...(r.artifacts.memory_report_json ? [r.artifacts.memory_report_json] : []),
+                  ...(r.artifacts.agent_state_json ? [r.artifacts.agent_state_json] : []),
+                ].length > 0 && (
                   <div className="mt-2 flex flex-wrap gap-1">
-                    {r.artifacts.map((a, i) => (
+                    {[
+                      ...(r.artifacts.final_report ? [r.artifacts.final_report] : []),
+                      ...r.artifacts.intermediate_files,
+                      ...(r.artifacts.memory_report_json ? [r.artifacts.memory_report_json] : []),
+                      ...(r.artifacts.agent_state_json ? [r.artifacts.agent_state_json] : []),
+                    ].map((a, i) => (
                       <span
                         key={i}
                         className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
                       >
-                        {a.name}
+                        {a.filename}
                       </span>
                     ))}
                   </div>

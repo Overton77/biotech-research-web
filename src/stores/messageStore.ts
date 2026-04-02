@@ -6,8 +6,9 @@ interface MessageStore {
   streamingContent: string;
   isStreaming: boolean;
   activeToolName: string | null;
+  startStreaming: () => void;
   appendToken: (token: string) => void;
-  finalizeStream: (threadId: string) => void;
+  finalizeStream: (threadId: string, finalContent?: string) => void;
   setMessages: (messages: Message[]) => void;
   addMessage: (message: Message) => void;
   setActiveTool: (toolName: string | null) => void;
@@ -19,19 +20,21 @@ export const useMessageStore = create<MessageStore>((set) => ({
   streamingContent: "",
   isStreaming: false,
   activeToolName: null,
+  startStreaming: () => set({ isStreaming: true, activeToolName: null }),
   appendToken: (token) =>
     set((s) => ({
       streamingContent: s.streamingContent + token,
       isStreaming: true,
     })),
-  finalizeStream: (threadId) =>
+  finalizeStream: (threadId, finalContent) =>
     set((s) => {
-      if (!s.streamingContent.trim()) return { isStreaming: false, streamingContent: "", activeToolName: null };
+      const content = s.streamingContent.trim() ? s.streamingContent : (finalContent ?? "");
+      if (!content.trim()) return { isStreaming: false, streamingContent: "", activeToolName: null };
       const newMessage: Message = {
         id: crypto.randomUUID(),
         thread_id: threadId,
         role: "assistant",
-        content: s.streamingContent,
+        content,
         created_at: new Date().toISOString(),
         metadata: {},
       };
