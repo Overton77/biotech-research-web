@@ -50,7 +50,7 @@ export default function ThreadPage({ params }: PageProps) {
     setIsDeleting(true);
     try {
       await deleteThread.mutateAsync(id);
-      router.push("/");
+      router.push("/dashboard/chats");
     } finally {
       setIsDeleting(false);
     }

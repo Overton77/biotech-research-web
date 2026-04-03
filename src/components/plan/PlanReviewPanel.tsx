@@ -169,7 +169,7 @@ export function PlanReviewPanel({ threadId }: PlanReviewPanelProps) {
               {missionId}
             </p>
             <Link
-              href={`/runs/${missionId}`}
+              href={`/dashboard/missions/${missionId}`}
               className="inline-flex items-center gap-1 mt-2 text-xs font-medium text-emerald-700 dark:text-emerald-300 hover:underline"
             >
               Watch run

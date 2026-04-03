@@ -1,0 +1,550 @@
+query DashboardOrganizations(
+  $first: Int!
+  $after: String
+  $where: OrganizationWhere
+) {
+  organizationsConnection(
+    first: $first
+    after: $after
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    totalCount
+    aggregate {
+      count {
+        nodes
+      }
+      node {
+        createdAt {
+          min
+          max
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        name
+        description
+        canonicalTicker
+        states(limit: 3) {
+          id
+          name
+          sector
+        }
+        offersProducts(limit: 5) {
+          __typename
+          ... on Product {
+            id
+            name
+          }
+          ... on FoodProduct {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}
+
+query DashboardOrganizationsOffset(
+  $limit: Int!
+  $offset: Int!
+  $where: OrganizationWhere
+) {
+  organizations(
+    limit: $limit
+    offset: $offset
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    id
+    name
+    description
+    canonicalTicker
+    states(limit: 3) {
+      id
+      name
+      sector
+    }
+    offersProducts(limit: 5) {
+      __typename
+      ... on Product {
+        id
+        name
+      }
+      ... on FoodProduct {
+        id
+        name
+      }
+    }
+  }
+}
+
+query DashboardOrganizationTotal($where: OrganizationWhere) {
+  organizationsConnection(first: 1, where: $where) {
+    totalCount
+  }
+}
+
+query DashboardProducts(
+  $first: Int!
+  $after: String
+  $where: ProductWhere
+) {
+  productsConnection(
+    first: $first
+    after: $after
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    totalCount
+    aggregate {
+      count {
+        nodes
+      }
+      node {
+        createdAt {
+          min
+          max
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        name
+        description
+        primaryRegulatoryIdentifier
+        offeredBy(limit: 3) {
+          id
+          name
+        }
+        deliversLabTests(limit: 4) {
+          id
+          name
+        }
+        implementsPanels(limit: 3) {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+
+query DashboardProductsOffset($limit: Int!, $offset: Int!, $where: ProductWhere) {
+  products(
+    limit: $limit
+    offset: $offset
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    id
+    name
+    description
+    primaryRegulatoryIdentifier
+    offeredBy(limit: 3) {
+      id
+      name
+    }
+    deliversLabTests(limit: 4) {
+      id
+      name
+    }
+    implementsPanels(limit: 3) {
+      id
+      name
+    }
+  }
+}
+
+query DashboardProductTotal($where: ProductWhere) {
+  productsConnection(first: 1, where: $where) {
+    totalCount
+  }
+}
+
+query DashboardLabTests(
+  $first: Int!
+  $after: String
+  $where: LabTestWhere
+) {
+  labTestsConnection(
+    first: $first
+    after: $after
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    totalCount
+    aggregate {
+      count {
+        nodes
+      }
+      node {
+        createdAt {
+          min
+          max
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        name
+        description
+        testType
+        measuresBiomarkers(limit: 4) {
+          id
+          name
+        }
+        usesPlatforms(limit: 3) {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+
+query DashboardLabTestsOffset(
+  $limit: Int!
+  $offset: Int!
+  $where: LabTestWhere
+) {
+  labTests(
+    limit: $limit
+    offset: $offset
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    id
+    name
+    description
+    testType
+    measuresBiomarkers(limit: 4) {
+      id
+      name
+    }
+    usesPlatforms(limit: 3) {
+      id
+      name
+    }
+  }
+}
+
+query DashboardLabTestTotal($where: LabTestWhere) {
+  labTestsConnection(first: 1, where: $where) {
+    totalCount
+  }
+}
+
+query DashboardPanelDefinitions(
+  $first: Int!
+  $after: String
+  $where: PanelDefinitionWhere
+) {
+  panelDefinitionsConnection(
+    first: $first
+    after: $after
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    totalCount
+    aggregate {
+      count {
+        nodes
+      }
+      node {
+        createdAt {
+          min
+          max
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        name
+        description
+        panelType
+        versionLabel
+        includesLabTests(limit: 5) {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+
+query DashboardPanelDefinitionsOffset(
+  $limit: Int!
+  $offset: Int!
+  $where: PanelDefinitionWhere
+) {
+  panelDefinitions(
+    limit: $limit
+    offset: $offset
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    id
+    name
+    description
+    panelType
+    versionLabel
+    includesLabTests(limit: 5) {
+      id
+      name
+    }
+  }
+}
+
+query DashboardPanelDefinitionTotal($where: PanelDefinitionWhere) {
+  panelDefinitionsConnection(first: 1, where: $where) {
+    totalCount
+  }
+}
+
+query DashboardPeople(
+  $first: Int!
+  $after: String
+  $where: PersonWhere
+) {
+  peopleConnection(
+    first: $first
+    after: $after
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    totalCount
+    aggregate {
+      count {
+        nodes
+      }
+      node {
+        createdAt {
+          min
+          max
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        name
+        title
+        description
+        bio
+        affiliatedWith(limit: 3) {
+          id
+          name
+        }
+        holdsRoleAt(limit: 3) {
+          id
+          name
+        }
+      }
+    }
+  }
+}
+
+query DashboardPeopleOffset(
+  $limit: Int!
+  $offset: Int!
+  $where: PersonWhere
+) {
+  people(
+    limit: $limit
+    offset: $offset
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    id
+    name
+    title
+    description
+    bio
+    affiliatedWith(limit: 3) {
+      id
+      name
+    }
+    holdsRoleAt(limit: 3) {
+      id
+      name
+    }
+  }
+}
+
+query DashboardPersonTotal($where: PersonWhere) {
+  peopleConnection(first: 1, where: $where) {
+    totalCount
+  }
+}
+
+query DashboardStudies(
+  $first: Int!
+  $after: String
+  $where: StudyWhere
+) {
+  studiesConnection(
+    first: $first
+    after: $after
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    totalCount
+    aggregate {
+      count {
+        nodes
+      }
+      node {
+        createdAt {
+          min
+          max
+        }
+        enrollmentCount {
+          min
+          max
+          average
+        }
+      }
+    }
+    pageInfo {
+      hasNextPage
+      endCursor
+    }
+    edges {
+      cursor
+      node {
+        id
+        name
+        description
+        overallStatus
+        studyPhase
+        enrollmentCount
+        sponsoredBy(limit: 3) {
+          id
+          name
+        }
+        evaluates(limit: 4) {
+          __typename
+          ... on Product {
+            id
+            name
+          }
+          ... on Compound {
+            id
+            name
+          }
+          ... on CompoundForm {
+            id
+            name
+          }
+          ... on FoodItem {
+            id
+            name
+          }
+        }
+      }
+    }
+  }
+}
+
+query DashboardStudiesOffset(
+  $limit: Int!
+  $offset: Int!
+  $where: StudyWhere
+) {
+  studies(
+    limit: $limit
+    offset: $offset
+    sort: [{ name: ASC }]
+    where: $where
+  ) {
+    id
+    name
+    description
+    overallStatus
+    studyPhase
+    enrollmentCount
+    sponsoredBy(limit: 3) {
+      id
+      name
+    }
+    evaluates(limit: 4) {
+      __typename
+      ... on Product {
+        id
+        name
+      }
+      ... on Compound {
+        id
+        name
+      }
+      ... on CompoundForm {
+        id
+        name
+      }
+      ... on FoodItem {
+        id
+        name
+      }
+    }
+  }
+}
+
+query DashboardStudyTotal($where: StudyWhere) {
+  studiesConnection(first: 1, where: $where) {
+    totalCount
+  }
+}
+
+# Single request for dashboard overview (unfiltered totals; same connections as *Total queries).
+query DashboardOverviewEntityTotals {
+  organizationsConnection(first: 1) {
+    totalCount
+  }
+  productsConnection(first: 1) {
+    totalCount
+  }
+  labTestsConnection(first: 1) {
+    totalCount
+  }
+  panelDefinitionsConnection(first: 1) {
+    totalCount
+  }
+  peopleConnection(first: 1) {
+    totalCount
+  }
+  studiesConnection(first: 1) {
+    totalCount
+  }
+}

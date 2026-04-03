@@ -5,7 +5,11 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { usePlans, useLaunchPlan } from "@/lib/queries";
 import { Pagination } from "@/components/dashboard/Pagination";
-import { StatusBadge } from "@/components/dashboard/StatusBadge";
+import {
+  ResearchPlanCard,
+  ResearchPlanCardGrid,
+} from "@/components/plans/ResearchPlanCard";
+import { Button } from "@/components/ui/button";
 
 const PAGE_SIZE = 20;
 
@@ -18,116 +22,80 @@ export default function PlansListPage() {
   async function handleLaunch(planId: string) {
     try {
       const result = await launchPlan.mutateAsync(planId);
-      router.push(`/runs/${result.mission_id}`);
+      router.push(`/dashboard/missions/${result.mission_id}`);
     } catch (e) {
       console.error("Launch failed:", e);
     }
   }
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-lg font-bold mb-4">Research Plans</h1>
+    <div className="mx-auto max-w-7xl p-6">
+      <div className="mb-8 space-y-2">
+        <h1 className="text-3xl font-bold tracking-tight text-foreground">
+          Research plans
+        </h1>
+        <p className="max-w-2xl text-sm leading-relaxed text-muted-foreground">
+          Browse objectives, pipeline flags, and task structure. Open a plan for
+          the full layout, edits, and launch.
+        </p>
+      </div>
 
       {isLoading && (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
+        <ResearchPlanCardGrid>
+          {[1, 2, 3, 4, 5, 6].map((i) => (
             <div
               key={i}
-              className="h-16 rounded-lg bg-muted/60 animate-pulse"
+              className="h-80 animate-pulse rounded-xl border border-border bg-muted/40"
             />
           ))}
-        </div>
+        </ResearchPlanCardGrid>
       )}
 
       {data && data.items.length === 0 && (
-        <p className="text-sm text-muted-foreground py-8 text-center">
+        <p className="py-16 text-center text-sm text-muted-foreground">
           No plans found.
         </p>
       )}
 
       {data && data.items.length > 0 && (
         <>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">
-                    Title
-                  </th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">
-                    Objective
-                  </th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">
-                    Tasks
-                  </th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">
-                    Status
-                  </th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">
-                    Created
-                  </th>
-                  <th className="text-right px-4 py-2.5 font-medium text-xs text-muted-foreground">
-                    Actions
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {data.items.map((p) => (
-                  <tr
-                    key={p.id}
-                    className="hover:bg-muted/20 transition-colors"
+          <ResearchPlanCardGrid>
+            {data.items.map((p) => (
+              <ResearchPlanCard
+                key={p.id}
+                plan={p}
+                onOpen={() => router.push(`/dashboard/plans/${p.id}`)}
+              >
+                <Button variant="outline" size="sm" asChild>
+                  <Link href={`/threads/${p.thread_id}`}>Thread</Link>
+                </Button>
+                {p.mission_id && (
+                  <Button variant="outline" size="sm" asChild>
+                    <Link href={`/dashboard/missions/${p.mission_id}`}>Mission</Link>
+                  </Button>
+                )}
+                {p.status === "approved" && (
+                  <Button
+                    type="button"
+                    variant="secondary"
+                    size="sm"
+                    disabled={launchPlan.isPending}
+                    onClick={() => handleLaunch(p.id)}
                   >
-                    <td className="px-4 py-3 font-medium truncate max-w-[200px]">
-                      {p.title}
-                    </td>
-                    <td className="px-4 py-3 text-muted-foreground truncate max-w-[250px]">
-                      {p.objective}
-                    </td>
-                    <td className="px-4 py-3 text-xs">{p.tasks.length}</td>
-                    <td className="px-4 py-3">
-                      <StatusBadge status={p.status} />
-                    </td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {new Date(p.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <div className="flex items-center justify-end gap-2">
-                        <Link
-                          href={`/threads/${p.thread_id}`}
-                          className="text-xs text-muted-foreground hover:text-foreground"
-                        >
-                          Thread
-                        </Link>
-                        {p.mission_id && (
-                          <Link
-                            href={`/runs/${p.mission_id}`}
-                            className="text-xs text-muted-foreground hover:text-foreground"
-                          >
-                            Mission
-                          </Link>
-                        )}
-                        {p.status === "approved" && (
-                          <button
-                            onClick={() => handleLaunch(p.id)}
-                            disabled={launchPlan.isPending}
-                            className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline disabled:opacity-50"
-                          >
-                            Launch
-                          </button>
-                        )}
-                      </div>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+                    Launch
+                  </Button>
+                )}
+              </ResearchPlanCard>
+            ))}
+          </ResearchPlanCardGrid>
+          <div className="mt-10">
+            <Pagination
+              skip={skip}
+              limit={PAGE_SIZE}
+              total={data.total}
+              onPageChange={setSkip}
+            />
           </div>
-          <Pagination
-            skip={skip}
-            limit={PAGE_SIZE}
-            total={data.total}
-            onPageChange={setSkip}
-          />
         </>
       )}
     </div>

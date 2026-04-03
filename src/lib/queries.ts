@@ -105,7 +105,13 @@ export function useLaunchPlan() {
 // Missions
 // ---------------------------------------------------------------------------
 
-export function useMissions(params?: { skip?: number; limit?: number; status_filter?: string }) {
+export function useMissions(params?: {
+  skip?: number;
+  limit?: number;
+  status_filter?: string;
+  min_task_count?: number;
+  max_task_count?: number;
+}) {
   return useQuery<PaginatedResponse<ResearchMission>>({
     queryKey: ["missions", params],
     queryFn: () => api.missions.list(params),

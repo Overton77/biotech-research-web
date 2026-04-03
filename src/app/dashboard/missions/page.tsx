@@ -1,71 +1,132 @@
 "use client";
 
 import { useState } from "react";
-import Link from "next/link";
 import { useMissions } from "@/lib/queries";
 import { Pagination } from "@/components/dashboard/Pagination";
-import { StatusBadge } from "@/components/dashboard/StatusBadge";
+import { MissionCard } from "@/components/missions/MissionCard";
 
-const PAGE_SIZE = 20;
+const PAGE_SIZE = 12;
+
+const STATUS_OPTIONS: { value: string; label: string }[] = [
+  { value: "", label: "All statuses" },
+  { value: "running", label: "Running" },
+  { value: "completed", label: "Completed" },
+  { value: "partial", label: "Partial" },
+  { value: "failed", label: "Failed" },
+];
 
 export default function MissionsListPage() {
   const [skip, setSkip] = useState(0);
-  const { data, isLoading } = useMissions({ skip, limit: PAGE_SIZE });
+  const [statusFilter, setStatusFilter] = useState("");
+  const [minTasks, setMinTasks] = useState("");
+  const [maxTasks, setMaxTasks] = useState("");
+
+  const minParsed = minTasks === "" ? undefined : Number.parseInt(minTasks, 10);
+  const maxParsed = maxTasks === "" ? undefined : Number.parseInt(maxTasks, 10);
+
+  const { data, isLoading } = useMissions({
+    skip,
+    limit: PAGE_SIZE,
+    status_filter: statusFilter || undefined,
+    min_task_count:
+      minParsed !== undefined && !Number.isNaN(minParsed) ? minParsed : undefined,
+    max_task_count:
+      maxParsed !== undefined && !Number.isNaN(maxParsed) ? maxParsed : undefined,
+  });
 
   return (
-    <div className="p-6 max-w-5xl mx-auto">
-      <h1 className="text-lg font-bold mb-4">Research Missions</h1>
+    <div className="p-6 max-w-6xl mx-auto pb-16">
+      <div className="mb-6 flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Research missions</h1>
+          <p className="mt-1 text-sm text-muted-foreground">
+            Filter by status and planned task count. Open a mission for the full record, live progress, and outputs.
+          </p>
+        </div>
+      </div>
+
+      <div className="mb-8 space-y-3 rounded-xl border border-border bg-card/40 p-4">
+        <div className="flex flex-col gap-4 sm:flex-row sm:flex-wrap sm:items-end">
+          <label className="flex min-w-[160px] flex-1 flex-col gap-1.5 text-xs font-medium text-muted-foreground">
+            Status
+            <select
+              value={statusFilter}
+              onChange={(e) => {
+              setStatusFilter(e.target.value);
+              setSkip(0);
+            }}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            >
+              {STATUS_OPTIONS.map((o) => (
+                <option key={o.value || "all"} value={o.value}>
+                  {o.label}
+                </option>
+              ))}
+            </select>
+          </label>
+          <label className="flex w-full min-w-[100px] max-w-[140px] flex-col gap-1.5 text-xs font-medium text-muted-foreground">
+            Min tasks
+            <input
+              type="number"
+              min={0}
+              placeholder="Any"
+              value={minTasks}
+              onChange={(e) => {
+                setMinTasks(e.target.value);
+                setSkip(0);
+              }}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            />
+          </label>
+          <label className="flex w-full min-w-[100px] max-w-[140px] flex-col gap-1.5 text-xs font-medium text-muted-foreground">
+            Max tasks
+            <input
+              type="number"
+              min={0}
+              placeholder="Any"
+              value={maxTasks}
+              onChange={(e) => {
+                setMaxTasks(e.target.value);
+                setSkip(0);
+              }}
+              className="h-9 rounded-md border border-input bg-background px-3 text-sm text-foreground"
+            />
+          </label>
+        </div>
+        <p className="text-[11px] text-muted-foreground">
+          Task count filters use the stored expected task count on each mission. Older missions without that field may
+          not appear when a min or max is set.
+        </p>
+      </div>
 
       {isLoading && (
-        <div className="space-y-2">
-          {[1, 2, 3].map((i) => (
-            <div key={i} className="h-16 rounded-lg bg-muted/60 animate-pulse" />
+        <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <div key={i} className="h-72 rounded-xl bg-muted/60 animate-pulse" />
           ))}
         </div>
       )}
 
       {data && data.items.length === 0 && (
-        <p className="text-sm text-muted-foreground py-8 text-center">No missions found.</p>
+        <p className="py-16 text-center text-sm text-muted-foreground">No missions match your filters.</p>
       )}
 
       {data && data.items.length > 0 && (
         <>
-          <div className="border border-border rounded-lg overflow-hidden">
-            <table className="w-full text-sm">
-              <thead>
-                <tr className="border-b border-border bg-muted/30">
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Title</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Objective</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Tasks</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Status</th>
-                  <th className="text-left px-4 py-2.5 font-medium text-xs text-muted-foreground">Created</th>
-                  <th className="text-right px-4 py-2.5 font-medium text-xs text-muted-foreground">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-border">
-                {data.items.map((m) => (
-                  <tr key={m.id} className="hover:bg-muted/20 transition-colors">
-                    <td className="px-4 py-3 font-medium truncate max-w-[180px]">{m.title}</td>
-                    <td className="px-4 py-3 text-muted-foreground truncate max-w-[220px]">{m.objective}</td>
-                    <td className="px-4 py-3 text-xs">{m.task_count}</td>
-                    <td className="px-4 py-3"><StatusBadge status={m.status} /></td>
-                    <td className="px-4 py-3 text-xs text-muted-foreground">
-                      {new Date(m.created_at).toLocaleDateString()}
-                    </td>
-                    <td className="px-4 py-3 text-right">
-                      <Link
-                        href={`/runs/${m.id}`}
-                        className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
-                      >
-                        {m.status === "running" ? "Watch" : "View run"}
-                      </Link>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {data.items.map((m, index) => (
+              <MissionCard
+                key={m.document_id ?? `${m.mission_id}-${m.created_at}-${index}`}
+                mission={m}
+                detailHref={`/dashboard/missions/${m.id}`}
+                planHref={m.plan_id ? `/dashboard/plans/${m.plan_id}` : null}
+                threadHref={m.thread_id ? `/threads/${m.thread_id}` : null}
+              />
+            ))}
           </div>
-          <Pagination skip={skip} limit={PAGE_SIZE} total={data.total} onPageChange={setSkip} />
+          <div className="mt-8">
+            <Pagination skip={skip} limit={PAGE_SIZE} total={data.total} onPageChange={setSkip} />
+          </div>
         </>
       )}
     </div>

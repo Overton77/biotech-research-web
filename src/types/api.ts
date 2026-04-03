@@ -41,6 +41,20 @@ export interface StarterSource {
   description: string;
 }
 
+/** Mirrors backend `UnstructuredIngestionConfig` (subset + index signature for forward compatibility). */
+export interface UnstructuredIngestionConfig {
+  enabled: boolean;
+  validate_in_isolation?: boolean;
+  write_to_neo4j?: boolean;
+  max_relationship_chunks?: number;
+  parser_backend?: "docling" | "llamaparse";
+  llama_parse_tier?: string;
+  summary_policy?: Record<string, unknown>;
+  embedding_config?: Record<string, unknown>;
+  chunk_cleaning?: Record<string, unknown>;
+  chunk_enhancement?: Record<string, unknown>;
+}
+
 export interface ResearchTask {
   id: string;
   title: string;
@@ -68,6 +82,8 @@ export interface ResearchPlan {
   tasks: ResearchTask[];
   starter_sources: StarterSource[];
   context: string;
+  run_kg?: boolean;
+  unstructured_ingestion?: UnstructuredIngestionConfig;
   status:
     | "draft"
     | "pending_approval"
@@ -161,6 +177,8 @@ export interface MissionTask {
 
 export interface ResearchMission {
   id: string;
+  /** MongoDB Beanie document id — unique per row (use for React keys when mission_id may repeat). */
+  document_id?: string;
   mission_id: string;
   plan_id?: string | null;
   thread_id?: string | null;
@@ -170,6 +188,8 @@ export interface ResearchMission {
   mission_name: string;
   base_domain: string;
   mission_type: "stage_based" | "iterative";
+  /** Denormalized planned task count for list filtering (may be null on older documents). */
+  expected_task_count?: number | null;
   targets: string[];
   status: "running" | "completed" | "partial" | "failed";
   error?: string | null;

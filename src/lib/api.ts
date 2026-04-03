@@ -103,13 +103,23 @@ export const api = {
   },
 
   missions: {
-    list: (params?: { skip?: number; limit?: number; research_plan_id?: string; thread_id?: string; status_filter?: string }) => {
+    list: (params?: {
+      skip?: number;
+      limit?: number;
+      research_plan_id?: string;
+      thread_id?: string;
+      status_filter?: string;
+      min_task_count?: number;
+      max_task_count?: number;
+    }) => {
       const qs = new URLSearchParams();
       if (params?.skip != null) qs.set("skip", String(params.skip));
       if (params?.limit != null) qs.set("limit", String(params.limit));
       if (params?.research_plan_id) qs.set("research_plan_id", params.research_plan_id);
       if (params?.thread_id) qs.set("thread_id", params.thread_id);
       if (params?.status_filter) qs.set("status_filter", params.status_filter);
+      if (params?.min_task_count != null) qs.set("min_task_count", String(params.min_task_count));
+      if (params?.max_task_count != null) qs.set("max_task_count", String(params.max_task_count));
       const q = qs.toString();
       return apiFetch<PaginatedResponse<ResearchMission>>(`/missions${q ? "?" + q : ""}`);
     },

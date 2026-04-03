@@ -2,6 +2,8 @@
 
 import { useState } from "react";
 import { useMissionOutputs, useMissionRuns } from "@/lib/queries";
+import { MarkdownBody } from "@/components/missions/MarkdownBody";
+import { StatusBadge } from "@/components/dashboard/StatusBadge";
 
 interface MissionOutputsViewProps {
   missionId: string;
@@ -18,14 +20,15 @@ function CollapsibleSection({
 }) {
   const [open, setOpen] = useState(defaultOpen);
   return (
-    <div className="border border-border rounded-lg overflow-hidden">
+    <div className="border border-border rounded-xl overflow-hidden bg-card/30">
       <button
+        type="button"
         onClick={() => setOpen(!open)}
-        className="w-full flex items-center justify-between px-4 py-3 text-sm font-medium hover:bg-muted/50 transition-colors"
+        className="flex w-full items-center justify-between px-4 py-3 text-left text-sm font-medium hover:bg-muted/50 transition-colors"
       >
         {title}
         <svg
-          className={`w-4 h-4 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
+          className={`size-4 shrink-0 text-muted-foreground transition-transform ${open ? "rotate-180" : ""}`}
           fill="none"
           stroke="currentColor"
           viewBox="0 0 24 24"
@@ -33,16 +36,28 @@ function CollapsibleSection({
           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />
         </svg>
       </button>
-      {open && <div className="px-4 pb-4 border-t border-border">{children}</div>}
+      {open && <div className="border-t border-border px-4 py-4">{children}</div>}
     </div>
   );
 }
 
-function CodeBlock({ content }: { content: string }) {
+function ArticleFrame({
+  title,
+  subtitle,
+  children,
+}: {
+  title: string;
+  subtitle?: string;
+  children: React.ReactNode;
+}) {
   return (
-    <pre className="mt-2 p-3 rounded-md bg-muted text-xs font-mono overflow-x-auto max-h-96 overflow-y-auto whitespace-pre-wrap wrap-break-word">
-      {content}
-    </pre>
+    <article className="rounded-xl border border-border bg-card p-5 shadow-sm">
+      <header className="mb-4 border-b border-border pb-3">
+        <h3 className="text-base font-semibold tracking-tight">{title}</h3>
+        {subtitle ? <p className="mt-1 text-xs text-muted-foreground">{subtitle}</p> : null}
+      </header>
+      {children}
+    </article>
   );
 }
 
@@ -52,9 +67,9 @@ export function MissionOutputsView({ missionId }: MissionOutputsViewProps) {
 
   if (isLoading) {
     return (
-      <div className="p-6 space-y-3">
+      <div className="space-y-3">
         {[1, 2, 3].map((i) => (
-          <div key={i} className="h-12 rounded-lg bg-muted/60 animate-pulse" />
+          <div key={i} className="h-24 rounded-xl bg-muted/60 animate-pulse" />
         ))}
       </div>
     );
@@ -62,118 +77,141 @@ export function MissionOutputsView({ missionId }: MissionOutputsViewProps) {
 
   if (error) {
     return (
-      <div className="p-6">
-        <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-300">
-          Failed to load outputs. They may not be available yet.
-        </div>
+      <div className="rounded-lg border border-red-200 bg-red-50 dark:border-red-800 dark:bg-red-900/20 p-4 text-sm text-red-700 dark:text-red-300">
+        Failed to load outputs. They may not be available yet.
       </div>
     );
   }
 
+  const summary = outputs?.summary;
+
   return (
-    <div className="p-6 space-y-4">
-      <h2 className="text-base font-semibold">Mission Outputs</h2>
+    <div className="space-y-8">
+      <p className="text-sm text-muted-foreground">
+        Reports and summaries are rendered as readable articles. Raw payloads stay behind collapsible sections.
+      </p>
 
-      {outputs?.final_report_markdown && (
-        <CollapsibleSection title="Final Report (Markdown)" defaultOpen>
-          <div className="mt-2 prose prose-sm dark:prose-invert max-w-none">
-            <pre className="whitespace-pre-wrap text-sm">{outputs.final_report_markdown}</pre>
-          </div>
-        </CollapsibleSection>
-      )}
+      {outputs?.final_report_markdown ? (
+        <ArticleFrame title="Final report" subtitle="Synthesized mission output (markdown)">
+          <MarkdownBody markdown={outputs.final_report_markdown} />
+        </ArticleFrame>
+      ) : null}
 
-      {outputs?.summary && (
-        <CollapsibleSection title="Summary">
-          <CodeBlock content={JSON.stringify(outputs.summary, null, 2)} />
-        </CollapsibleSection>
-      )}
+      {summary ? (
+        <ArticleFrame title="Execution summary" subtitle="Task completion snapshot">
+          <dl className="grid gap-3 text-sm sm:grid-cols-2">
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Mission status</dt>
+              <dd className="mt-1">
+                <StatusBadge status={summary.status} />
+              </dd>
+            </div>
+            <div>
+              <dt className="text-xs font-medium uppercase tracking-wide text-muted-foreground">Tasks</dt>
+              <dd className="mt-1 tabular-nums">
+                {summary.completed_tasks} completed · {summary.failed_tasks} failed · {summary.running_tasks}{" "}
+                running · {summary.pending_tasks} pending · {summary.total_tasks} total
+              </dd>
+            </div>
+          </dl>
+        </ArticleFrame>
+      ) : null}
 
-      {outputs?.mission && (
-        <CollapsibleSection title="Mission Mongo Document">
-          <CodeBlock content={JSON.stringify(outputs.mission, null, 2)} />
-        </CollapsibleSection>
-      )}
-
-      {outputs?.stage_reports && outputs.stage_reports.length > 0 && (
-        <CollapsibleSection title="Stage Reports">
-          <CodeBlock content={JSON.stringify(outputs.stage_reports, null, 2)} />
-        </CollapsibleSection>
-      )}
-
-      {outputs?.artifacts && outputs.artifacts.length > 0 && (
-        <CollapsibleSection title="Artifacts">
-          <CodeBlock content={JSON.stringify(outputs.artifacts, null, 2)} />
-        </CollapsibleSection>
-      )}
-
-      {outputs?.task_runs_index && (
-        <CollapsibleSection title="Task Runs Index">
-          <CodeBlock content={JSON.stringify(outputs.task_runs_index, null, 2)} />
-        </CollapsibleSection>
-      )}
-
-      {runs && runs.length > 0 && (
-        <div>
-          <h3 className="text-sm font-semibold mb-3">Task Runs ({runs.length})</h3>
-          <div className="space-y-2">
-            {runs.map((r) => (
-              <div
-                key={r.id}
-                className="border border-border rounded-lg p-3"
+      {outputs?.stage_reports && outputs.stage_reports.length > 0 ? (
+        <section className="space-y-4">
+          <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">Stage reports</h2>
+          <div className="space-y-6">
+            {outputs.stage_reports.map((sr, srIndex) => (
+              <ArticleFrame
+                key={`${sr.run_id}-${srIndex}`}
+                title={sr.task_slug}
+                subtitle={`${sr.stage_type.replace(/_/g, " ")} · iteration ${sr.iteration ?? 1} · ${sr.status}`}
               >
-                <div className="flex items-center justify-between">
-                  <span className="text-sm font-medium">{r.task_slug}</span>
-                  <span
-                    className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                      r.status === "completed"
-                        ? "bg-emerald-100 text-emerald-700 dark:bg-emerald-900/30 dark:text-emerald-300"
-                        : "bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300"
-                    }`}
-                  >
-                    {r.status}
-                  </span>
+                <div className="mb-3 flex items-center gap-2">
+                  <StatusBadge status={sr.status} />
                 </div>
-                <div className="text-xs text-muted-foreground mt-1">
-                  Iteration {r.iteration ?? 1}
-                  {r.started_at && ` | Started: ${new Date(r.started_at).toLocaleString()}`}
-                  {r.completed_at && ` | Completed: ${new Date(r.completed_at).toLocaleString()}`}
-                </div>
-                {r.error && (
-                  <p className="text-xs text-red-500 mt-1 truncate">{r.error}</p>
-                )}
-                {[
-                  ...(r.artifacts.final_report ? [r.artifacts.final_report] : []),
-                  ...r.artifacts.intermediate_files,
-                  ...(r.artifacts.memory_report_json ? [r.artifacts.memory_report_json] : []),
-                  ...(r.artifacts.agent_state_json ? [r.artifacts.agent_state_json] : []),
-                ].length > 0 && (
-                  <div className="mt-2 flex flex-wrap gap-1">
-                    {[
-                      ...(r.artifacts.final_report ? [r.artifacts.final_report] : []),
-                      ...r.artifacts.intermediate_files,
-                      ...(r.artifacts.memory_report_json ? [r.artifacts.memory_report_json] : []),
-                      ...(r.artifacts.agent_state_json ? [r.artifacts.agent_state_json] : []),
-                    ].map((a, i) => (
-                      <span
-                        key={i}
-                        className="text-[10px] px-1.5 py-0.5 rounded bg-muted text-muted-foreground"
-                      >
-                        {a.filename}
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
+                <MarkdownBody markdown={sr.final_report_text} />
+              </ArticleFrame>
             ))}
           </div>
-        </div>
-      )}
+        </section>
+      ) : null}
 
-      {!outputs?.final_report_markdown && !outputs?.summary && !outputs?.mission && (
-        <div className="text-sm text-muted-foreground py-8 text-center">
-          No S3 outputs available for this mission yet.
-        </div>
-      )}
+      {outputs?.artifacts && outputs.artifacts.length > 0 ? (
+        <ArticleFrame title="Artifact index" subtitle="Files written during stage runs">
+          <div className="overflow-x-auto">
+            <table className="w-full text-left text-sm">
+              <thead>
+                <tr className="border-b border-border text-xs text-muted-foreground">
+                  <th className="pb-2 pr-4 font-medium">File</th>
+                  <th className="pb-2 pr-4 font-medium">Type</th>
+                  <th className="pb-2 pr-4 font-medium">Task</th>
+                  <th className="pb-2 font-medium">Size</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-border/80">
+                {outputs.artifacts.map((row, i) => (
+                  <tr key={`${row.run_id}-${i}`}>
+                    <td className="py-2 pr-4 font-mono text-xs">{row.artifact.filename}</td>
+                    <td className="py-2 pr-4 text-xs">{row.artifact.artifact_type}</td>
+                    <td className="py-2 pr-4 text-xs">{row.task_slug}</td>
+                    <td className="py-2 text-xs tabular-nums text-muted-foreground">
+                      {row.artifact.size_bytes != null ? `${row.artifact.size_bytes} B` : "—"}
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        </ArticleFrame>
+      ) : null}
+
+      {runs?.some((r) => r.memory_report) ? (
+        <section className="space-y-3">
+          <h2 className="text-sm font-semibold tracking-wide text-muted-foreground uppercase">Per-run memory</h2>
+          <div className="space-y-4">
+            {runs
+              .filter((r) => r.memory_report)
+              .map((r) => (
+                <ArticleFrame
+                  key={r.id}
+                  title={`Memory · ${r.task_slug}`}
+                  subtitle={new Date(r.memory_report!.recorded_at).toLocaleString()}
+                >
+                  <p className="text-sm leading-relaxed text-foreground/90">{r.memory_report!.summary}</p>
+                  {r.memory_report!.file_paths?.length ? (
+                    <ul className="mt-3 list-inside list-disc text-xs text-muted-foreground">
+                      {r.memory_report!.file_paths.map((fp) => (
+                        <li key={fp}>{fp}</li>
+                      ))}
+                    </ul>
+                  ) : null}
+                </ArticleFrame>
+              ))}
+          </div>
+        </section>
+      ) : null}
+
+      <CollapsibleSection title="Raw mission document (JSON)" defaultOpen={false}>
+        <pre className="max-h-80 overflow-auto rounded-lg bg-muted p-3 text-xs font-mono whitespace-pre-wrap wrap-break-word">
+          {outputs?.mission ? JSON.stringify(outputs.mission, null, 2) : "{}"}
+        </pre>
+      </CollapsibleSection>
+
+      {outputs?.task_runs_index && outputs.task_runs_index.length > 0 ? (
+        <CollapsibleSection title="Task runs index (JSON)" defaultOpen={false}>
+          <pre className="max-h-80 overflow-auto rounded-lg bg-muted p-3 text-xs font-mono whitespace-pre-wrap wrap-break-word">
+            {JSON.stringify(outputs.task_runs_index, null, 2)}
+          </pre>
+        </CollapsibleSection>
+      ) : null}
+
+      {!outputs?.final_report_markdown &&
+        !summary &&
+        (!outputs?.stage_reports || outputs.stage_reports.length === 0) &&
+        !outputs?.mission && (
+          <p className="py-12 text-center text-sm text-muted-foreground">No outputs available for this mission yet.</p>
+        )}
     </div>
   );
 }

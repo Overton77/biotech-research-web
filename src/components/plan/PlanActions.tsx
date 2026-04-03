@@ -15,9 +15,12 @@ import {
 
 interface PlanActionsProps {
   threadId: string;
-  interruptId: string;
+  /** When set with `standalone={false}`, Socket.IO resume is used after approve/reject. */
+  interruptId: string | null;
   plan: ResearchPlan;
   onClose: () => void;
+  /** Dashboard / plan page: REST-only approve, no reject, no socket. */
+  standalone?: boolean;
 }
 
 function makeEmptyStarterSource(): StarterSource {
@@ -48,11 +51,26 @@ function makeEmptyTask(): ResearchTask {
   };
 }
 
+function defaultUnstructured(): NonNullable<ResearchPlan["unstructured_ingestion"]> {
+  return {
+    enabled: false,
+    validate_in_isolation: true,
+    write_to_neo4j: false,
+    max_relationship_chunks: 12,
+    parser_backend: "docling",
+    llama_parse_tier: "agentic",
+  };
+}
+
 function normalizePlanForEdit(plan: ResearchPlan): ResearchPlan {
+  const baseUnstructured =
+    plan.unstructured_ingestion ?? defaultUnstructured();
   return {
     ...plan,
     context: plan.context ?? "",
     approver_notes: plan.approver_notes ?? "",
+    run_kg: plan.run_kg ?? false,
+    unstructured_ingestion: { ...defaultUnstructured(), ...baseUnstructured },
     starter_sources: plan.starter_sources ?? [],
     stages: plan.stages ?? [],
     tasks: (plan.tasks ?? []).map((task) => ({
@@ -70,8 +88,10 @@ export function PlanActions({
   interruptId,
   plan,
   onClose,
+  standalone = false,
 }: PlanActionsProps) {
   const socket = useSocket();
+  const hitlMode = !standalone && Boolean(interruptId);
 
   const [notes, setNotes] = useState("");
   const [editedPlan, setEditedPlan] = useState<ResearchPlan>(() =>
@@ -192,6 +212,8 @@ export function PlanActions({
       starter_sources: edited.starter_sources,
       context: edited.context,
       approver_notes: edited.approver_notes,
+      run_kg: edited.run_kg,
+      unstructured_ingestion: edited.unstructured_ingestion,
     };
   }
 
@@ -220,17 +242,20 @@ export function PlanActions({
       });
     }
 
-    socket.emit("plan_approved", {
-      thread_id: threadId,
-      interrupt_id: interruptId,
-      plan: editedPlan,
-      notes: notes || editedPlan.approver_notes || undefined,
-    });
+    if (hitlMode && interruptId) {
+      socket.emit("plan_approved", {
+        thread_id: threadId,
+        interrupt_id: interruptId,
+        plan: editedPlan,
+        notes: notes || editedPlan.approver_notes || undefined,
+      });
+    }
 
     onClose();
   }
 
   function handleReject() {
+    if (!hitlMode || !interruptId) return;
     socket.emit("plan_rejected", {
       thread_id: threadId,
       interrupt_id: interruptId,
@@ -244,11 +269,12 @@ export function PlanActions({
     <div className="space-y-4 border-t border-border pt-4">
       <div>
         <h4 className="text-sm font-semibold">
-          Review, edit, and approve plan
+          {standalone ? "Edit plan" : "Review, edit, and approve plan"}
         </h4>
         <p className="text-xs text-muted-foreground">
-          You can edit the plan before approval. Agent config is intentionally
-          omitted.
+          {standalone
+            ? "Changes save to the server. Only draft and pending plans accept edits."
+            : "You can edit the plan before approval. Agent config is intentionally omitted."}
         </p>
       </div>
 
@@ -280,6 +306,36 @@ export function PlanActions({
           className="w-full rounded-lg border border-border bg-background px-3 py-2 text-sm"
         />
       </label>
+
+      <div className="flex flex-col gap-3 rounded-lg border border-border bg-muted/20 p-3">
+        <p className="text-xs font-medium text-muted-foreground">Pipeline</p>
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={editedPlan.run_kg ?? false}
+            onChange={(e) => setTopLevel("run_kg", e.target.checked)}
+            className="rounded border-border"
+          />
+          <span>Run knowledge graph ingestion after stages</span>
+        </label>
+        <label className="flex cursor-pointer items-center gap-2 text-sm">
+          <input
+            type="checkbox"
+            checked={editedPlan.unstructured_ingestion?.enabled ?? false}
+            onChange={(e) =>
+              setEditedPlan((prev) => ({
+                ...prev,
+                unstructured_ingestion: {
+                  ...(prev.unstructured_ingestion ?? defaultUnstructured()),
+                  enabled: e.target.checked,
+                },
+              }))
+            }
+            className="rounded border-border"
+          />
+          <span>Enable staged unstructured document ingestion</span>
+        </label>
+      </div>
 
       <div className="space-y-2">
         <div className="flex items-center justify-between">
@@ -520,25 +576,33 @@ export function PlanActions({
           {updatePlanMutation.isPending ? "Saving..." : "Save changes"}
         </button>
 
-        <button
-          type="button"
-          onClick={handleApprove}
-          disabled={isLoading}
-          className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
-        >
-          {saveAndApprovePlanMutation.isPending || approvePlanMutation.isPending
-            ? "Approving..."
-            : "Save + approve"}
-        </button>
+        {(standalone
+          ? plan.status === "draft" || plan.status === "pending_approval"
+          : true) && (
+          <button
+            type="button"
+            onClick={handleApprove}
+            disabled={isLoading}
+            className="rounded-lg bg-emerald-600 px-3 py-2 text-sm font-medium text-white hover:bg-emerald-700 disabled:opacity-50"
+          >
+            {saveAndApprovePlanMutation.isPending || approvePlanMutation.isPending
+              ? "Approving..."
+              : standalone
+                ? "Approve plan"
+                : "Save + approve"}
+          </button>
+        )}
 
-        <button
-          type="button"
-          onClick={handleReject}
-          disabled={isLoading}
-          className="rounded-lg border border-red-300 bg-background px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50"
-        >
-          Reject
-        </button>
+        {hitlMode && (
+          <button
+            type="button"
+            onClick={handleReject}
+            disabled={isLoading}
+            className="rounded-lg border border-red-300 bg-background px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50 disabled:opacity-50 dark:hover:bg-red-950/30"
+          >
+            Reject
+          </button>
+        )}
       </div>
 
       {(updatePlanMutation.error ||

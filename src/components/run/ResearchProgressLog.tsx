@@ -6,6 +6,7 @@ import type { ResearchProgressPayload } from "@/types/api";
 interface ResearchProgressLogProps {
   events: ResearchProgressPayload[];
   maxHeight?: string;
+  missionCompleted?: boolean;
 }
 
 const EVENT_ICONS: Record<string, string> = {
@@ -98,6 +99,7 @@ function summarizeEvent(e: ResearchProgressPayload): string {
 
 export function ResearchProgressLog({
   events,
+  missionCompleted,
   maxHeight = "100%",
 }: ResearchProgressLogProps) {
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -124,7 +126,7 @@ export function ResearchProgressLog({
       </div>
 
       <div ref={scrollRef} className="flex-1 overflow-y-auto">
-        {events.length === 0 ? (
+        {events.length === 0 && !missionCompleted ? (
           <div className="flex items-center justify-center py-12 text-sm text-muted-foreground">
             Waiting for events...
           </div>
